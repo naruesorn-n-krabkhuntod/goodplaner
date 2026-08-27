@@ -1,0 +1,25 @@
+# Secrets must never enter the image.
+.env
+.env.*
+!.env.example
+
+node_modules
+.git
+.github
+.claude
+
+# Local-only tooling and docs
+docker-compose.yml
+README.md
+CLAUDE.md
+*.md
+!prisma/**/*.md
+
+# Test files are not needed at runtime
+**/*.test.ts
+**/*.test.tsx
+
+.vercel
+dist
+coverage
+**/*.log
