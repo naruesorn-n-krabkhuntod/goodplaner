@@ -139,13 +139,25 @@ export const app = new Elysia()
     },
   })
 
+  /**
+   * Readiness probe, used as Railway's health check.
+   *
+   * A 503 here fails a deploy, so the underlying error is logged rather than
+   * swallowed: otherwise a bad DATABASE_URL surfaces only as an opaque
+   * "Healthcheck failure" with nothing to go on.
+   */
   .get("/healthz", async ({ set }) => {
     try {
       await db.$queryRaw`SELECT 1`;
       return { ok: true };
-    } catch {
+    } catch (error) {
+      console.error("healthz: database unreachable —", error);
       set.status = 503;
-      return { ok: false, error: "database unavailable" };
+      return {
+        ok: false,
+        error: "database unavailable",
+        detail: error instanceof Error ? error.message : String(error),
+      };
     }
   });
 

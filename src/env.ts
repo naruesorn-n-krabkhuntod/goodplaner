@@ -28,9 +28,22 @@ const isProduction = NODE_ENV === "production";
  * produces invite links nobody can open and an OAuth `redirect_uri_mismatch`,
  * neither of which points at the real cause.
  */
-const appUrl = isProduction
-  ? required("APP_URL").replace(/\/$/, "")
-  : optional("APP_URL", "http://localhost:3000").replace(/\/$/, "");
+/**
+ * Railway sets RAILWAY_PUBLIC_DOMAIN as soon as the service has a domain, so
+ * the origin can be inferred rather than pasted in by hand. Without this there
+ * is a chicken-and-egg: you cannot know the domain until the service exists,
+ * but the service will not boot without APP_URL.
+ */
+const platformDomain = Bun.env.RAILWAY_PUBLIC_DOMAIN;
+const inferredAppUrl = platformDomain ? `https://${platformDomain}` : undefined;
+
+const appUrl = (
+  Bun.env.APP_URL ||
+  inferredAppUrl ||
+  (isProduction
+    ? required("APP_URL") // throws with a useful message
+    : "http://localhost:3000")
+).replace(/\/$/, "");
 
 if (isProduction && !appUrl.startsWith("https://")) {
   throw new Error(
