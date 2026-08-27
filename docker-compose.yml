@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: goodplaner-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: goodplaner
+      POSTGRES_PASSWORD: goodplaner
+      POSTGRES_DB: goodplaner
+    ports:
+      - "5432:5432"
+    volumes:
+      - goodplaner-data:/var/lib/postgresql/data
+    healthcheck:
+      # `bun run db:migrate` right after `up` fails without this.
+      test: ["CMD-SHELL", "pg_isready -U goodplaner -d goodplaner"]
+      interval: 3s
+      timeout: 3s
+      retries: 15
+
+volumes:
+  goodplaner-data:

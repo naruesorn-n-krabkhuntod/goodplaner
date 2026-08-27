@@ -1,0 +1,348 @@
+// GoodPlanner - schema
+// A "Plan" is a workspace. Everything else hangs off it.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Prisma 7: the connection URL lives in prisma.config.ts (for the CLI) and is
+// passed to PrismaClient through the pg driver adapter (see src/lib/db.ts).
+datasource db {
+  provider = "postgresql"
+}
+
+// =====================  Identity  =====================
+
+model User {
+  id        String   @id @default(cuid())
+  googleId  String   @unique
+  email     String   @unique
+  name      String
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessions      Session[]
+  memberships   PlanMember[]
+  invitesSent   Invite[]     @relation("InviteSender")
+  assignedItems Item[]       @relation("Assignee")
+  reportedItems Item[]       @relation("Reporter")
+  comments      Comment[]
+  activities    Activity[]
+  whiteboards   Whiteboard[]
+
+  @@map("users")
+}
+
+/// Server-side sessions. The cookie carries only the opaque id.
+model Session {
+  id        String   @id
+  userId    String
+  expiresAt DateTime
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+// =====================  Workspace  =====================
+
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+/// A Plan is a workspace: its own board, backlog, sprints, whiteboards and members.
+model Plan {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  /// Short prefix used in item keys, e.g. "GP" gives GP-14.
+  key         String
+  name        String
+  description String?
+  emoji       String    @default("clipboard")
+  color       String    @default("blue")
+  itemCounter Int       @default(0)
+  archivedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  members     PlanMember[]
+  boards      Board[]
+  items       Item[]
+  sprints     Sprint[]
+  labels      Label[]
+  whiteboards Whiteboard[]
+  activities  Activity[]
+  invites     Invite[]
+
+  @@index([archivedAt])
+  @@map("plans")
+}
+
+model PlanMember {
+  id        String   @id @default(cuid())
+  planId    String
+  userId    String
+  role      Role     @default(MEMBER)
+  createdAt DateTime @default(now())
+
+  plan Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, userId])
+  @@index([userId])
+  @@map("plan_members")
+}
+
+model Invite {
+  id          String    @id @default(cuid())
+  planId      String
+  token       String    @unique
+  /// Optional: pin the invite to one address.
+  email       String?
+  role        Role      @default(MEMBER)
+  invitedById String
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  plan      Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  invitedBy User @relation("InviteSender", fields: [invitedById], references: [id], onDelete: Cascade)
+
+  @@index([planId])
+  @@map("invites")
+}
+
+// =====================  Board  =====================
+
+enum StatusCategory {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+model Board {
+  id        String   @id @default(cuid())
+  planId    String
+  name      String   @default("Board")
+  isDefault Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  plan    Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+  columns Column[]
+  items   Item[]
+
+  @@index([planId])
+  @@map("boards")
+}
+
+model Column {
+  id       String         @id @default(cuid())
+  boardId  String
+  name     String
+  position Int
+  wipLimit Int?
+  category StatusCategory @default(TODO)
+
+  board Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  items Item[]
+
+  @@index([boardId, position])
+  @@map("columns")
+}
+
+// =====================  Work items  =====================
+
+enum ItemType {
+  TASK
+  STORY
+  BUG
+  EPIC
+  CHORE
+}
+
+enum Priority {
+  NONE
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model Item {
+  id          String    @id @default(cuid())
+  planId      String
+  boardId     String?
+  columnId    String?
+  /// Per-plan sequence number.
+  number      Int
+  /// "GP-14" - denormalised for lookup and display.
+  key         String    @unique
+  title       String
+  description String?
+  type        ItemType  @default(TASK)
+  priority    Priority  @default(NONE)
+  storyPoints Int?
+  /// Single fractional rank, shared by the backlog and the board (same model as Jira).
+  rank        Float
+  assigneeId  String?
+  reporterId  String
+  sprintId    String?
+  parentId    String?
+  startDate   DateTime?
+  dueDate     DateTime?
+  completedAt DateTime?
+  archivedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  plan       Plan            @relation(fields: [planId], references: [id], onDelete: Cascade)
+  board      Board?          @relation(fields: [boardId], references: [id], onDelete: SetNull)
+  column     Column?         @relation(fields: [columnId], references: [id], onDelete: SetNull)
+  assignee   User?           @relation("Assignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  reporter   User            @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  sprint     Sprint?         @relation(fields: [sprintId], references: [id], onDelete: SetNull)
+  parent     Item?           @relation("SubItems", fields: [parentId], references: [id], onDelete: SetNull)
+  children   Item[]          @relation("SubItems")
+  labels     ItemLabel[]
+  comments   Comment[]
+  checklist  ChecklistItem[]
+  activities Activity[]
+
+  @@unique([planId, number])
+  @@index([planId, archivedAt])
+  @@index([columnId, rank])
+  @@index([sprintId, rank])
+  @@index([assigneeId, dueDate])
+  @@map("items")
+}
+
+model Label {
+  id     String @id @default(cuid())
+  planId String
+  name   String
+  color  String @default("gray")
+
+  plan  Plan        @relation(fields: [planId], references: [id], onDelete: Cascade)
+  items ItemLabel[]
+
+  @@unique([planId, name])
+  @@map("labels")
+}
+
+model ItemLabel {
+  itemId  String
+  labelId String
+
+  item  Item  @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  label Label @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@id([itemId, labelId])
+  @@index([labelId])
+  @@map("item_labels")
+}
+
+model ChecklistItem {
+  id       String  @id @default(cuid())
+  itemId   String
+  text     String
+  done     Boolean @default(false)
+  position Float
+
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([itemId, position])
+  @@map("checklist_items")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  itemId    String
+  userId    String
+  body      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([itemId, createdAt])
+  @@map("comments")
+}
+
+// =====================  Scrum  =====================
+
+enum SprintState {
+  PLANNED
+  ACTIVE
+  COMPLETED
+}
+
+model Sprint {
+  id          String      @id @default(cuid())
+  planId      String
+  name        String
+  goal        String?
+  state       SprintState @default(PLANNED)
+  position    Int
+  startDate   DateTime?
+  endDate     DateTime?
+  completedAt DateTime?
+  createdAt   DateTime    @default(now())
+
+  plan       Plan       @relation(fields: [planId], references: [id], onDelete: Cascade)
+  items      Item[]
+  activities Activity[]
+
+  @@index([planId, position])
+  @@map("sprints")
+}
+
+// =====================  Whiteboard  =====================
+
+model Whiteboard {
+  id          String   @id @default(cuid())
+  planId      String
+  name        String   @default("Untitled board")
+  /// Array of shape objects; the canvas island owns this format.
+  scene       Json     @default("[]")
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  plan      Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  createdBy User @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([planId, updatedAt])
+  @@map("whiteboards")
+}
+
+// =====================  Activity log  =====================
+
+model Activity {
+  id       String @id @default(cuid())
+  planId   String
+  itemId   String?
+  sprintId String?
+  userId   String?
+  /// e.g. "item.moved", "sprint.started"
+  action   String
+  meta     Json     @default("{}")
+  createdAt DateTime @default(now())
+
+  plan   Plan    @relation(fields: [planId], references: [id], onDelete: Cascade)
+  item   Item?   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  sprint Sprint? @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([planId, createdAt])
+  @@index([itemId, createdAt])
+  @@map("activities")
+}

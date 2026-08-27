@@ -1,0 +1,859 @@
+/* =========================================================================
+   Component library
+   Every interactive element defines hover / focus / active / disabled, and a
+   busy state driven by htmx's own `.htmx-request` class.
+   ========================================================================= */
+
+/* ================================ Buttons ================================ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: 32px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  line-height: 1;
+  white-space: nowrap;
+  user-select: none;
+  border: 1px solid transparent;
+  transition:
+    background var(--duration-fast) var(--ease),
+    border-color var(--duration-fast) var(--ease),
+    box-shadow var(--duration-fast) var(--ease),
+    opacity var(--duration-fast) var(--ease);
+}
+
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* htmx sets .htmx-request on the element issuing a request. */
+.btn.htmx-request {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.btn.htmx-request::after {
+  content: "";
+  width: 13px;
+  height: 13px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* -- Variants -- */
+
+.btn-primary {
+  /* accent-solid, not accent: white text needs 4.5:1 against the fill */
+  background: var(--accent-solid);
+  color: var(--text-on-accent);
+  box-shadow: var(--shadow-sm);
+}
+.btn-primary:hover {
+  background: var(--accent-hover);
+}
+.btn-primary:active {
+  background: var(--accent-hover);
+  transform: translateY(0.5px);
+}
+
+.btn-secondary {
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-sm);
+}
+.btn-secondary:hover {
+  background: var(--wash-hover);
+}
+.btn-secondary:active {
+  background: var(--wash-active);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+}
+.btn-ghost:hover {
+  background: var(--wash-hover);
+  color: var(--text-primary);
+}
+.btn-ghost:active {
+  background: var(--wash-active);
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: #fff;
+}
+.btn-danger:hover {
+  filter: brightness(1.08);
+}
+
+.btn-danger-ghost {
+  background: transparent;
+  color: var(--danger);
+}
+.btn-danger-ghost:hover {
+  background: var(--danger-subtle);
+}
+
+/* -- Sizes -- */
+
+.btn-sm {
+  height: 26px;
+  padding: 0 var(--space-2);
+  font-size: var(--text-sm);
+  gap: var(--space-1);
+}
+
+.btn-lg {
+  height: 40px;
+  padding: 0 var(--space-5);
+  font-size: var(--text-md);
+}
+
+.btn-icon {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+}
+.btn-icon:hover {
+  background: var(--wash-hover);
+  color: var(--text-primary);
+}
+
+.btn-block {
+  width: 100%;
+}
+
+/* Touch devices get the 44px minimum target the design system calls for. */
+@media (pointer: coarse) {
+  .btn {
+    min-height: 44px;
+    padding: 0 var(--space-4);
+  }
+  .btn-sm {
+    min-height: 36px;
+  }
+  .btn-icon {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* Google sign-in button - brand mark plus neutral chrome. */
+.btn-google {
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+  height: 44px;
+  padding: 0 var(--space-5);
+  font-size: var(--text-md);
+  box-shadow: var(--shadow-sm);
+}
+.btn-google:hover {
+  background: var(--wash-hover);
+}
+
+/* ================================= Forms ================================= */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.label {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text-secondary);
+}
+
+.label .required {
+  color: var(--danger);
+  margin-left: 2px;
+}
+
+.input,
+.textarea,
+.select {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-sunken);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
+  color: var(--text-primary);
+  transition:
+    background var(--duration-fast) var(--ease),
+    border-color var(--duration-fast) var(--ease),
+    box-shadow var(--duration-fast) var(--ease);
+}
+
+.input::placeholder,
+.textarea::placeholder {
+  color: var(--text-tertiary);
+}
+
+.input:hover,
+.textarea:hover,
+.select:hover {
+  background: var(--wash-hover);
+}
+
+.input:focus,
+.textarea:focus,
+.select:focus {
+  outline: none;
+  background: var(--bg);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-subtle);
+}
+
+.input:disabled,
+.textarea:disabled,
+.select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.input[aria-invalid="true"],
+.textarea[aria-invalid="true"] {
+  border-color: var(--danger);
+  background: var(--danger-subtle);
+}
+
+.input[aria-invalid="true"]:focus,
+.textarea[aria-invalid="true"]:focus {
+  box-shadow: 0 0 0 3px var(--danger-subtle);
+}
+
+.textarea {
+  min-height: 84px;
+  resize: vertical;
+  line-height: var(--leading-relaxed);
+  font-family: inherit;
+}
+
+.select {
+  appearance: none;
+  padding-right: var(--space-6);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5' fill='none' stroke='%238f8f8b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-3) center;
+  cursor: pointer;
+}
+
+/* Error text sits under the field and is wired up with aria-describedby. */
+.field-error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--danger);
+}
+
+.field-hint {
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+}
+
+/* Inline title input that looks like text until you interact with it. */
+.input-seamless {
+  background: transparent;
+  border: 1px solid transparent;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: inherit;
+  font-weight: inherit;
+  width: 100%;
+}
+.input-seamless:hover {
+  background: var(--wash-hover);
+}
+.input-seamless:focus {
+  background: var(--bg);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-subtle);
+  outline: none;
+}
+
+/* -- Checkbox -- */
+
+.checkbox {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  flex: none;
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  display: grid;
+  place-content: center;
+  transition:
+    background var(--duration-fast) var(--ease),
+    border-color var(--duration-fast) var(--ease);
+}
+
+.checkbox::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  transform: scale(0);
+  transition: transform var(--duration-fast) var(--ease);
+  box-shadow: inset 1em 1em var(--text-on-accent);
+  clip-path: polygon(14% 44%, 0 65%, 43% 100%, 100% 16%, 80% 0%, 40% 66%);
+}
+
+.checkbox:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.checkbox:checked::before {
+  transform: scale(1);
+}
+
+.checkbox:hover:not(:checked) {
+  border-color: var(--accent);
+}
+
+/* ================================= Cards ================================= */
+
+.card {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+}
+
+.card-interactive {
+  transition:
+    background var(--duration-fast) var(--ease),
+    border-color var(--duration-fast) var(--ease),
+    box-shadow var(--duration-base) var(--ease),
+    transform var(--duration-base) var(--ease);
+}
+
+.card-interactive:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-card);
+  transform: translateY(-1px);
+}
+
+.card-title {
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+}
+
+/* ================================ Badges ================================= */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: 20px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  line-height: 1;
+  white-space: nowrap;
+  background: var(--bg-sunken);
+  color: var(--text-secondary);
+}
+
+.badge-accent {
+  background: var(--accent-subtle);
+  color: var(--accent-text);
+}
+.badge-success {
+  background: var(--success-subtle);
+  color: var(--success);
+}
+.badge-warning {
+  background: var(--warning-subtle);
+  color: var(--warning);
+}
+.badge-danger {
+  background: var(--danger-subtle);
+  color: var(--danger);
+}
+
+/* Colour-coded chip driven by data-color, used for labels and plan accents. */
+.chip[data-color="gray"] {
+  background: var(--c-gray-bg);
+  color: var(--c-gray);
+}
+.chip[data-color="blue"] {
+  background: var(--c-blue-bg);
+  color: var(--c-blue);
+}
+.chip[data-color="purple"] {
+  background: var(--c-purple-bg);
+  color: var(--c-purple);
+}
+.chip[data-color="pink"] {
+  background: var(--c-pink-bg);
+  color: var(--c-pink);
+}
+.chip[data-color="red"] {
+  background: var(--c-red-bg);
+  color: var(--c-red);
+}
+.chip[data-color="orange"] {
+  background: var(--c-orange-bg);
+  color: var(--c-orange);
+}
+.chip[data-color="yellow"] {
+  background: var(--c-yellow-bg);
+  color: var(--c-yellow);
+}
+.chip[data-color="green"] {
+  background: var(--c-green-bg);
+  color: var(--c-green);
+}
+.chip[data-color="teal"] {
+  background: var(--c-teal-bg);
+  color: var(--c-teal);
+}
+
+/* ================================ Avatars ================================ */
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: var(--radius-full);
+  background: var(--bg-sunken);
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  overflow: hidden;
+  user-select: none;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-sm {
+  width: 20px;
+  height: 20px;
+  font-size: 9px;
+}
+.avatar-lg {
+  width: 32px;
+  height: 32px;
+  font-size: var(--text-sm);
+}
+.avatar-xl {
+  width: 56px;
+  height: 56px;
+  font-size: var(--text-lg);
+}
+
+/* Deterministic tint so the same person is the same colour everywhere. */
+.avatar[data-tint="0"] {
+  background: var(--c-blue-bg);
+  color: var(--c-blue);
+}
+.avatar[data-tint="1"] {
+  background: var(--c-purple-bg);
+  color: var(--c-purple);
+}
+.avatar[data-tint="2"] {
+  background: var(--c-green-bg);
+  color: var(--c-green);
+}
+.avatar[data-tint="3"] {
+  background: var(--c-orange-bg);
+  color: var(--c-orange);
+}
+.avatar[data-tint="4"] {
+  background: var(--c-pink-bg);
+  color: var(--c-pink);
+}
+.avatar[data-tint="5"] {
+  background: var(--c-teal-bg);
+  color: var(--c-teal);
+}
+
+.avatar-stack {
+  display: flex;
+}
+
+.avatar-stack .avatar {
+  margin-left: -6px;
+  box-shadow: 0 0 0 2px var(--bg);
+}
+
+.avatar-stack .avatar:first-child {
+  margin-left: 0;
+}
+
+/* ================================ Menus ================================== */
+
+.menu {
+  min-width: 200px;
+  padding: var(--space-1);
+  background: var(--bg-raised);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  z-index: var(--z-dropdown);
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-base);
+  color: var(--text-primary);
+  text-align: left;
+  transition: background var(--duration-fast) var(--ease);
+}
+
+.menu-item:hover {
+  background: var(--wash-hover);
+}
+
+.menu-item[aria-current="true"] {
+  background: var(--wash-selected);
+  color: var(--accent-text);
+}
+
+.menu-item-danger {
+  color: var(--danger);
+}
+.menu-item-danger:hover {
+  background: var(--danger-subtle);
+}
+
+.menu-separator {
+  height: 1px;
+  margin: var(--space-1) 0;
+  background: var(--divider);
+}
+
+.menu-label {
+  padding: var(--space-2) var(--space-2) var(--space-1);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Anchored dropdown wrapper. */
+.dropdown {
+  position: relative;
+}
+
+.dropdown-panel {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  left: 0;
+  animation: dropdown-in var(--duration-base) var(--ease);
+}
+
+.dropdown-panel[data-align="right"] {
+  left: auto;
+  right: 0;
+}
+
+@keyframes dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+/* ================================ Modal ================================== */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-overlay);
+  z-index: var(--z-overlay);
+  display: grid;
+  place-items: start center;
+  padding: var(--space-7) var(--space-4) var(--space-4);
+  overflow-y: auto;
+  animation: fade-in var(--duration-base) var(--ease);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.modal {
+  position: relative;
+  width: 100%;
+  max-width: 560px;
+  background: var(--bg-raised);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  z-index: var(--z-modal);
+  animation: modal-in var(--duration-slow) var(--ease);
+}
+
+.modal-lg {
+  max-width: 820px;
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--divider);
+}
+
+.modal-title {
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  flex: 1;
+  min-width: 0;
+}
+
+.modal-body {
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--divider);
+}
+
+/* ================================ Toasts ================================= */
+
+.toast-region {
+  position: fixed;
+  bottom: var(--space-5);
+  right: var(--space-5);
+  z-index: var(--z-toast);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 260px;
+  max-width: 420px;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-raised);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  font-size: var(--text-base);
+  pointer-events: auto;
+  animation: toast-in var(--duration-slow) var(--ease);
+}
+
+.toast[data-variant="success"] {
+  border-left-color: var(--success);
+}
+.toast[data-variant="error"] {
+  border-left-color: var(--danger);
+}
+.toast[data-variant="warning"] {
+  border-left-color: var(--warning);
+}
+
+.toast.leaving {
+  animation: toast-out var(--duration-base) var(--ease) forwards;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+}
+
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+}
+
+@media (max-width: 640px) {
+  .toast-region {
+    left: var(--space-4);
+    right: var(--space-4);
+    bottom: var(--space-4);
+  }
+  .toast {
+    min-width: 0;
+    max-width: none;
+  }
+}
+
+/* ============================= Empty states ============================== */
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-8) var(--space-5);
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.empty-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-sunken);
+  color: var(--text-tertiary);
+}
+
+.empty-title {
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+}
+
+.empty-body {
+  max-width: 360px;
+  font-size: var(--text-base);
+  line-height: var(--leading-relaxed);
+}
+
+/* ============================== Progress ================================= */
+
+.progress {
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--bg-sunken);
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  transition: width var(--duration-slow) var(--ease);
+}
+
+.progress-bar[data-variant="success"] {
+  background: var(--success);
+}
+
+/* =============================== Tooltip ================================= */
+
+[data-tooltip] {
+  position: relative;
+}
+
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: var(--space-1) var(--space-2);
+  background: var(--text-primary);
+  color: var(--bg);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: var(--z-dropdown);
+  animation: fade-in var(--duration-fast) var(--ease);
+}
+
+/* =============================== Divider ================================= */
+
+.divider {
+  height: 1px;
+  background: var(--divider);
+  border: none;
+}
+
+/* ============================== Skeletons ================================ */
+/* Shown via hx-indicator while a fragment loads. */
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-sunken) 25%,
+    var(--wash-hover) 37%,
+    var(--bg-sunken) 63%
+  );
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+  border-radius: var(--radius-sm);
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 100% 50%;
+  }
+  to {
+    background-position: 0 50%;
+  }
+}
+
+/* htmx indicator convention: hidden until a request is in flight. */
+.htmx-indicator {
+  opacity: 0;
+  transition: opacity var(--duration-base) var(--ease);
+}
+
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator {
+  opacity: 1;
+}

@@ -1,0 +1,274 @@
+/* =========================================================================
+   GoodPlanner design tokens
+   Notion-inspired: warm near-black text, near-white surfaces, hairline
+   borders, small radii, and colour used sparingly to mark meaning.
+   ========================================================================= */
+
+:root {
+  /* ---- Spacing scale (4 / 8 / 16 / 24 / 32 / 48 / 64) ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* ---- Radii ---- */
+  --radius-xs: 3px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+  --radius-full: 999px;
+
+  /* ---- Typography ---- */
+  --font-sans:
+    ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter",
+    "Noto Sans Thai", "Helvetica Neue", Arial, sans-serif;
+  --font-mono:
+    ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
+
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-base: 14px;
+  --text-md: 16px;
+  --text-lg: 20px;
+  --text-xl: 26px;
+  --text-2xl: 34px;
+  --text-3xl: 44px;
+
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.7;
+
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* ---- Motion ---- */
+  --ease: cubic-bezier(0.2, 0, 0.13, 1);
+  --duration-fast: 90ms;
+  --duration-base: 160ms;
+  --duration-slow: 260ms;
+
+  /* ---- Layout ---- */
+  --sidebar-width: 260px;
+  --topbar-height: 48px;
+  --content-max: 900px;
+
+  --z-sticky: 10;
+  --z-dropdown: 40;
+  --z-overlay: 50;
+  --z-modal: 60;
+  --z-toast: 70;
+}
+
+/* ------------------------------ Light theme ------------------------------ */
+
+:root,
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  /* Surfaces */
+  --bg: #ffffff;
+  --bg-sidebar: #f7f7f5;
+  --bg-subtle: #f7f7f5;
+  --bg-sunken: #f1f1ef;
+  --bg-raised: #ffffff;
+  --bg-overlay: rgba(15, 15, 15, 0.4);
+
+  /* Interaction washes - kept as alpha so they layer over any surface */
+  --wash-hover: rgba(55, 53, 47, 0.06);
+  --wash-active: rgba(55, 53, 47, 0.11);
+  --wash-selected: rgba(35, 131, 226, 0.1);
+
+  /* Text - #37352f is Notion's warm near-black; 12.6:1 on white */
+  --text-primary: #37352f;
+  --text-secondary: #6b6b68;
+  --text-tertiary: #737370;
+  --text-inverse: #ffffff;
+  --text-on-accent: #ffffff;
+
+  /* Lines */
+  --border: rgba(55, 53, 47, 0.11);
+  --border-strong: rgba(55, 53, 47, 0.2);
+  --divider: rgba(55, 53, 47, 0.08);
+
+  /* Accent */
+  --accent: #2383e2;
+  --accent-solid: #1a73cf;
+  --accent-hover: #175fac;
+  --accent-subtle: rgba(35, 131, 226, 0.1);
+  --accent-text: #1b6fc4;
+
+  /* Semantic - text variants are contrast-checked against --bg */
+  --success: #438053;
+  --success-subtle: rgba(74, 138, 92, 0.12);
+  --warning: #a56229;
+  --warning-subtle: rgba(203, 123, 55, 0.13);
+  --danger: #bd4f47;
+  --danger-subtle: rgba(196, 85, 77, 0.12);
+  --info: #2383e2;
+  --info-subtle: rgba(35, 131, 226, 0.1);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(15, 15, 15, 0.06);
+  --shadow-md:
+    rgba(15, 15, 15, 0.05) 0 0 0 1px, rgba(15, 15, 15, 0.1) 0 3px 6px,
+    rgba(15, 15, 15, 0.2) 0 9px 24px;
+  --shadow-lg:
+    rgba(15, 15, 15, 0.05) 0 0 0 1px, rgba(15, 15, 15, 0.1) 0 5px 10px,
+    rgba(15, 15, 15, 0.2) 0 15px 40px;
+  --shadow-card: 0 1px 2px rgba(15, 15, 15, 0.08);
+  --shadow-drag: 0 10px 24px rgba(15, 15, 15, 0.16), 0 2px 6px rgba(15, 15, 15, 0.1);
+}
+
+/* ------------------------------- Dark theme ------------------------------- */
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --bg: #191919;
+    --bg-sidebar: #202020;
+    --bg-subtle: #202020;
+    --bg-sunken: #161616;
+    --bg-raised: #252525;
+    --bg-overlay: rgba(0, 0, 0, 0.6);
+
+    --wash-hover: rgba(255, 255, 255, 0.055);
+    --wash-active: rgba(255, 255, 255, 0.1);
+    --wash-selected: rgba(35, 131, 226, 0.2);
+
+    --text-primary: #e9e9e7;
+    --text-secondary: #9b9b98;
+    --text-tertiary: #8a8a86;
+    --text-inverse: #191919;
+    --text-on-accent: #ffffff;
+
+    --border: rgba(255, 255, 255, 0.11);
+    --border-strong: rgba(255, 255, 255, 0.2);
+    --divider: rgba(255, 255, 255, 0.07);
+
+    --accent: #3b8ee8;
+    --accent-solid: #1a73cf;
+    --accent-hover: #59a1ee;
+    --accent-subtle: rgba(59, 142, 232, 0.18);
+    --accent-text: #6cb0f0;
+
+    --success: #7ab98a;
+    --success-subtle: rgba(122, 185, 138, 0.16);
+    --warning: #e0a25f;
+    --warning-subtle: rgba(224, 162, 95, 0.16);
+    --danger: #e58a83;
+    --danger-subtle: rgba(229, 138, 131, 0.16);
+    --info: #6cb0f0;
+    --info-subtle: rgba(108, 176, 240, 0.16);
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: rgba(0, 0, 0, 0.4) 0 3px 8px, rgba(0, 0, 0, 0.5) 0 9px 24px;
+    --shadow-lg: rgba(0, 0, 0, 0.45) 0 5px 12px, rgba(0, 0, 0, 0.6) 0 15px 40px;
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.35);
+    --shadow-drag: 0 10px 24px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.4);
+  }
+}
+
+/* Explicit toggle wins over the system preference in both directions. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #191919;
+  --bg-sidebar: #202020;
+  --bg-subtle: #202020;
+  --bg-sunken: #161616;
+  --bg-raised: #252525;
+  --bg-overlay: rgba(0, 0, 0, 0.6);
+
+  --wash-hover: rgba(255, 255, 255, 0.055);
+  --wash-active: rgba(255, 255, 255, 0.1);
+  --wash-selected: rgba(35, 131, 226, 0.2);
+
+  --text-primary: #e9e9e7;
+  --text-secondary: #9b9b98;
+  --text-tertiary: #8a8a86;
+  --text-inverse: #191919;
+  --text-on-accent: #ffffff;
+
+  --border: rgba(255, 255, 255, 0.11);
+  --border-strong: rgba(255, 255, 255, 0.2);
+  --divider: rgba(255, 255, 255, 0.07);
+
+  --accent: #3b8ee8;
+  --accent-solid: #1a73cf;
+  --accent-hover: #59a1ee;
+  --accent-subtle: rgba(59, 142, 232, 0.18);
+  --accent-text: #6cb0f0;
+
+  --success: #7ab98a;
+  --success-subtle: rgba(122, 185, 138, 0.16);
+  --warning: #e0a25f;
+  --warning-subtle: rgba(224, 162, 95, 0.16);
+  --danger: #e58a83;
+  --danger-subtle: rgba(229, 138, 131, 0.16);
+  --info: #6cb0f0;
+  --info-subtle: rgba(108, 176, 240, 0.16);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: rgba(0, 0, 0, 0.4) 0 3px 8px, rgba(0, 0, 0, 0.5) 0 9px 24px;
+  --shadow-lg: rgba(0, 0, 0, 0.45) 0 5px 12px, rgba(0, 0, 0, 0.6) 0 15px 40px;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-drag: 0 10px 24px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+/* --------------------- Named accents for plans & labels -------------------- */
+/* Each pairs a solid tone with a tinted background used by chips and avatars. */
+
+:root {
+  --c-gray: #6c6c69;
+  --c-gray-bg: rgba(143, 143, 139, 0.14);
+  --c-blue: #196cbf;
+  --c-blue-bg: rgba(35, 131, 226, 0.13);
+  --c-purple: #7c50cd;
+  --c-purple-bg: rgba(138, 99, 210, 0.14);
+  --c-pink: #bc327e;
+  --c-pink-bg: rgba(210, 86, 154, 0.14);
+  --c-red: #b4443c;
+  --c-red-bg: rgba(196, 85, 77, 0.14);
+  --c-orange: #9a5c28;
+  --c-orange-bg: rgba(203, 123, 55, 0.15);
+  --c-yellow: #886628;
+  --c-yellow-bg: rgba(193, 145, 56, 0.16);
+  --c-green: #3f764f;
+  --c-green-bg: rgba(74, 138, 92, 0.14);
+  --c-teal: #307574;
+  --c-teal-bg: rgba(58, 142, 140, 0.14);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --c-gray: #a3a3a0;
+    --c-blue: #6cb0f0;
+    --c-purple: #a98bdf;
+    --c-pink: #e17fb4;
+    --c-red: #e58a83;
+    --c-orange: #e0a25f;
+    --c-yellow: #d9b45f;
+    --c-green: #7ab98a;
+    --c-teal: #66b3b1;
+  }
+}
+
+:root[data-theme="dark"] {
+  --c-gray: #a3a3a0;
+  --c-blue: #6cb0f0;
+  --c-purple: #a98bdf;
+  --c-pink: #e17fb4;
+  --c-red: #e58a83;
+  --c-orange: #e0a25f;
+  --c-yellow: #d9b45f;
+  --c-green: #7ab98a;
+  --c-teal: #66b3b1;
+}
