@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "bun run --watch src/index.tsx",
-    "start": "NODE_ENV=production bun run src/index.tsx",
+    "start": "prisma migrate deploy && bun run src/index.tsx",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
     "check": "bun run typecheck && bun test",
@@ -18,14 +18,16 @@
     "db:seed": "bun run prisma/seed.ts",
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset",
-    "setup": "bun install && bun run db:up && bun run db:generate && bun run db:migrate && bun run db:seed"
+    "setup": "bun install && bun run db:up && bun run db:generate && bun run db:migrate && bun run db:seed",
+    "build": "prisma generate"
   },
   "dependencies": {
     "@elysiajs/html": "^1.4.2",
     "@elysiajs/static": "^1.4.10",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
-    "elysia": "^1.4.30"
+    "elysia": "^1.4.30",
+    "prisma": "7.10.0"
   },
   "devDependencies": {
     "@types/bun": "^1.4.0",
@@ -33,7 +35,6 @@
     "bun-types": "latest",
     "dotenv": "^17.4.2",
     "htmx.org": "^2.0.10",
-    "prisma": "7.10.0",
     "sortablejs": "^1.15.7",
     "typescript": "^7.0.2"
   }

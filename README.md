@@ -130,3 +130,37 @@ src/
   routes/          one module per feature area
   views/           layout, shared components, per-page views
 ```
+
+## Deploying to Railway
+
+Vercel is not a fit for this app: its functions are serverless, so the plan
+WebSocket that drives live board and whiteboard updates cannot stay open.
+Railway runs the Bun process directly and supports WebSockets, so nothing is
+lost. `railway.json` is committed and needs no extra setup.
+
+1. Create a Railway project from this repository. Nixpacks detects Bun from
+   `bun.lock`, runs `bun install`, then `bun run build` (`prisma generate`).
+2. Set these variables. `PORT` is injected by Railway — do not set it.
+
+   | Variable | Value |
+   | --- | --- |
+   | `NODE_ENV` | `production` |
+   | `APP_URL` | your public https origin, e.g. `https://goodplaner.up.railway.app` |
+   | `DATABASE_URL` | your Postgres connection string |
+   | `SESSION_SECRET` | a **new** value: `openssl rand -hex 32` |
+   | `GOOGLE_CLIENT_ID` | from Google Cloud Console |
+   | `GOOGLE_CLIENT_SECRET` | from Google Cloud Console |
+
+3. Add `<APP_URL>/auth/google/callback` to the authorised redirect URIs of your
+   Google OAuth client, alongside the localhost one.
+4. Deploy. The start command runs `prisma migrate deploy` before booting, so
+   migrations are applied on every release. `/healthz` is the health check.
+
+The app refuses to boot rather than run misconfigured, so a failed deploy names
+its own cause in the logs:
+
+- `APP_URL` missing, or not `https://` — session cookies are `Secure` in
+  production and a browser would silently drop them over http.
+- No sign-in method — development sign-in is force-disabled when
+  `NODE_ENV=production`, so Google credentials are mandatory there.
+- `DATABASE_URL` or `SESSION_SECRET` missing.

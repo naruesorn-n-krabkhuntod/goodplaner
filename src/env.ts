@@ -21,6 +21,36 @@ const NODE_ENV = optional("NODE_ENV", "development");
 const isProduction = NODE_ENV === "production";
 
 /**
+ * The public origin. Everything user-facing is built from it: the Google
+ * redirect URI and the invite links people paste to each other.
+ *
+ * In production it must be set explicitly — falling back to localhost there
+ * produces invite links nobody can open and an OAuth `redirect_uri_mismatch`,
+ * neither of which points at the real cause.
+ */
+const appUrl = isProduction
+  ? required("APP_URL").replace(/\/$/, "")
+  : optional("APP_URL", "http://localhost:3000").replace(/\/$/, "");
+
+if (isProduction && !appUrl.startsWith("https://")) {
+  throw new Error(
+    `APP_URL must be an https:// origin in production (got ${appUrl}). ` +
+      "Session cookies are set Secure and browsers will drop them over http.",
+  );
+}
+
+// The reverse mistake: deployed on a public https origin but NODE_ENV was never
+// set, so cookies are not Secure and the dev sign-in door could be open. Warn
+// rather than throw, because someone may legitimately be pointing a tunnel at a
+// local dev server.
+if (!isProduction && appUrl.startsWith("https://")) {
+  console.warn(
+    "\n  WARNING: APP_URL is https:// but NODE_ENV is not 'production'.\n" +
+      "  Session cookies will not be marked Secure. Set NODE_ENV=production.\n",
+  );
+}
+
+/**
  * Dev-only sign-in that skips Google. Requires BOTH a non-production NODE_ENV
  * and an explicit opt-in, so it can never be switched on by accident in prod.
  */
@@ -39,8 +69,9 @@ if (!googleConfigured && !devAuthEnabled) {
 export const env = {
   NODE_ENV,
   isProduction,
+  // Railway (and most PaaS) inject PORT; bind to whatever they give us.
   port: Number(optional("PORT", "3000")),
-  appUrl: optional("APP_URL", "http://localhost:3000").replace(/\/$/, ""),
+  appUrl,
   databaseUrl: required("DATABASE_URL"),
   sessionSecret: required("SESSION_SECRET"),
   google: {

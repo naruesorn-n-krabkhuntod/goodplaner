@@ -149,11 +149,13 @@ export const app = new Elysia()
     }
   });
 
-app.listen(env.port, (server) => {
+// hostname 0.0.0.0 is required inside a container: binding to localhost would
+// leave the app unreachable from Railway's proxy.
+app.listen({ port: env.port, hostname: "0.0.0.0" }, (server) => {
   // Realtime publishing needs the Bun server handle, available only once listening.
   bindRealtimeServer(server);
 
-  console.log(`\n  GoodPlanner running at ${env.appUrl}`);
+  console.log(`\n  GoodPlanner running at ${env.appUrl} (listening on :${env.port})`);
   console.log(`  Google sign-in: ${env.google.configured ? "configured" : "NOT configured"}`);
   if (env.devAuthEnabled) {
     console.log("  Development sign-in is ENABLED (never available in production)");
