@@ -3,6 +3,7 @@ import { assertCan } from "~/lib/access";
 import { logActivity } from "~/lib/activity";
 import { db } from "~/lib/db";
 import { createItem, rankForDrop } from "~/lib/plans";
+import { IndexField, toIndex } from "~/lib/schema";
 import { publishToPlan } from "~/lib/realtime";
 import { loadBacklogGroups } from "~/lib/views-data";
 import { planScope } from "~/plugins/plan-scope";
@@ -90,7 +91,7 @@ export const backlogRoutes = new Elysia({ prefix: "/p/:slug" })
         }
       }
 
-      const rank = await rankForDrop({ planId: plan.id, sprintId }, item.id, body.index);
+      const rank = await rankForDrop({ planId: plan.id, sprintId }, item.id, toIndex(body.index));
 
       await db.item.update({ where: { id: item.id }, data: { sprintId, rank } });
 
@@ -118,7 +119,7 @@ export const backlogRoutes = new Elysia({ prefix: "/p/:slug" })
       body: t.Object({
         itemId: t.String({ minLength: 1 }),
         sprintId: t.String(),
-        index: t.Number({ minimum: 0 }),
+        index: IndexField,
       }),
     },
   )

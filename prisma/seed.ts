@@ -19,6 +19,8 @@ const DEMO_USERS = [
   { email: "alan@example.com", name: "Alan Turing" },
 ];
 
+const DEMO_PLAN_SLUGS = ["product-team", "personal"];
+
 const DAY = 86_400_000;
 const RANK_STEP = 1024;
 
@@ -26,6 +28,11 @@ async function main() {
   console.log("Seeding...");
 
   // Remove anything from a previous run so the seed is idempotent.
+  //
+  // Plans must be deleted explicitly: they are only linked to a user through
+  // PlanMember, so deleting the demo users cascades away their memberships but
+  // leaves the plans behind, and the next run then collides on Plan.slug.
+  await db.plan.deleteMany({ where: { slug: { in: DEMO_PLAN_SLUGS } } });
   await db.user.deleteMany({ where: { email: { in: DEMO_USERS.map((u) => u.email) } } });
 
   const users = await Promise.all(

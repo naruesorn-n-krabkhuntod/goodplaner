@@ -3,6 +3,7 @@ import { assertCan } from "~/lib/access";
 import { logActivity } from "~/lib/activity";
 import { db } from "~/lib/db";
 import { createItem, getBoard, itemCardInclude, rankForDrop } from "~/lib/plans";
+import { IndexField, toIndex } from "~/lib/schema";
 import { publishToPlan } from "~/lib/realtime";
 import { planScope } from "~/plugins/plan-scope";
 import { Icon } from "~/views/icons";
@@ -125,7 +126,7 @@ export const boardRoutes = new Elysia({ prefix: "/p/:slug" })
       const rank = await rankForDrop(
         { planId: plan.id, columnId: targetColumn.id },
         item.id,
-        body.index,
+        toIndex(body.index),
       );
 
       // Entering or leaving a DONE column is what marks an item complete.
@@ -193,7 +194,7 @@ export const boardRoutes = new Elysia({ prefix: "/p/:slug" })
       body: t.Object({
         itemId: t.String({ minLength: 1 }),
         columnId: t.String({ minLength: 1 }),
-        index: t.Number({ minimum: 0 }),
+        index: IndexField,
       }),
     },
   )
