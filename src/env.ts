@@ -35,15 +35,28 @@ const isProduction = NODE_ENV === "production";
  * but the service will not boot without APP_URL.
  */
 const platformDomain = Bun.env.RAILWAY_PUBLIC_DOMAIN;
-const inferredAppUrl = platformDomain ? `https://${platformDomain}` : undefined;
 
-const appUrl = (
+/**
+ * Accepts a bare host as well as a full origin.
+ *
+ * Railway's RAILWAY_PUBLIC_DOMAIN is a bare domain, and anyone wiring APP_URL
+ * to it — by hand or with a variable reference — ends up with a scheme-less
+ * value. Refusing that is pedantry: a public deployment is https, and locally
+ * it is http.
+ */
+function toOrigin(value: string): string {
+  const trimmed = value.trim().replace(/\/$/, "");
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `${isProduction ? "https" : "http"}://${trimmed}`;
+}
+
+const appUrl = toOrigin(
   Bun.env.APP_URL ||
-  inferredAppUrl ||
-  (isProduction
-    ? required("APP_URL") // throws with a useful message
-    : "http://localhost:3000")
-).replace(/\/$/, "");
+    platformDomain ||
+    (isProduction
+      ? required("APP_URL") // throws with a useful message
+      : "http://localhost:3000"),
+);
 
 if (isProduction && !appUrl.startsWith("https://")) {
   throw new Error(
