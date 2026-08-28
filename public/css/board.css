@@ -873,10 +873,30 @@
   pointer-events: auto;
 }
 
+/* ===================== Card / row edit button ============================== */
+
+/* Edit button is always in the DOM but only visible on hover/focus-within.
+   This prevents accidental opens during drag. */
+.card-edit-btn,
+.row-edit-btn {
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease);
+  flex-shrink: 0;
+}
+
+.card-item:hover .card-edit-btn,
+.card-item:focus-within .card-edit-btn,
+.backlog-row:hover .row-edit-btn,
+.backlog-row:focus-within .row-edit-btn {
+  opacity: 1;
+}
+
 /* Floating action bar that appears when items are selected */
 .backlog-select-bar {
   position: fixed;
   bottom: var(--space-5);
+  /* account for iPhone home indicator */
+  padding-bottom: max(var(--space-3), env(safe-area-inset-bottom));
   left: 50%;
   transform: translateX(-50%);
   z-index: 200;
@@ -887,9 +907,11 @@
   background: var(--bg-raised);
   border: 1px solid var(--border);
   border-radius: var(--radius-full, 9999px);
-  box-shadow: 0 8px 32px rgba(0,0,0,.24);
+  box-shadow: var(--shadow-lg);
   backdrop-filter: blur(12px);
   white-space: nowrap;
+  max-width: calc(100vw - var(--space-6));
+  overflow-x: auto;
 }
 
 /* ===================== Sprint add-items panel ============================== */

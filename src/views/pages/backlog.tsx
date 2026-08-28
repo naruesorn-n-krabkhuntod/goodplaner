@@ -2,7 +2,7 @@ import type { Plan, Sprint } from "@prisma/client";
 import { formatDate, pluralise } from "~/lib/format";
 import type { ItemCard as ItemCardData } from "~/lib/plans";
 import { ax } from "~/views/alpine";
-import { EmptyState } from "~/views/components";
+import { EmptyState, type UserLike } from "~/views/components";
 import { Icon } from "~/views/icons";
 import { BacklogRow } from "~/views/item";
 import { Children } from "@kitajs/html";
@@ -17,6 +17,7 @@ interface BacklogProps {
   groups: BacklogGroupData[];
   canEdit: boolean;
   canManageSprints: boolean;
+  members: UserLike[];
 }
 
 function totalPoints(items: ItemCardData[]): number {
@@ -29,7 +30,7 @@ function totalPoints(items: ItemCardData[]): number {
  * Checking the checkboxes in the backlog tail and pressing "New sprint" creates
  * a sprint with those items pre-loaded.
  */
-export function BacklogRegion({ plan, groups, canEdit, canManageSprints }: BacklogProps) {
+export function BacklogRegion({ plan, groups, canEdit, canManageSprints, members }: BacklogProps) {
   const slug = plan.slug;
   const backlogGroup = groups.find((g) => g.sprint === null);
   const sprintGroups = groups.filter((g) => g.sprint !== null);
@@ -68,6 +69,7 @@ export function BacklogRegion({ plan, groups, canEdit, canManageSprints }: Backl
         canEdit={canEdit}
         canManageSprints={canManageSprints}
         selectable={canManageSprints}
+        members={members}
       />
 
       {/* Floating action bar — appears when items are selected */}
@@ -137,6 +139,7 @@ function BacklogGroup({
   canEdit,
   canManageSprints,
   selectable,
+  members = [],
 }: {
   slug: string;
   sprint: Sprint | null;
@@ -144,6 +147,7 @@ function BacklogGroup({
   canEdit: boolean;
   canManageSprints: boolean;
   selectable: boolean;
+  members?: UserLike[];
 }) {
   const points = totalPoints(items);
   const title = sprint ? sprint.name : "Backlog";
@@ -224,14 +228,14 @@ function BacklogGroup({
 
       {!sprint && canEdit ? (
         <div style="padding: var(--space-3) var(--space-4)">
-          <BacklogComposer slug={slug} />
+          <BacklogComposer slug={slug} members={members} />
         </div>
       ) : null}
     </section>
   );
 }
 
-function BacklogComposer({ slug }: { slug: string }) {
+function BacklogComposer({ slug, members }: { slug: string; members: UserLike[] }) {
   return (
     <div x-data="{ open: false }">
       <button
@@ -248,13 +252,13 @@ function BacklogComposer({ slug }: { slug: string }) {
       <form
         x-show="open"
         x-cloak=""
-        class="row gap-2"
+        class="stack gap-2"
         hx-post={`/p/${slug}/backlog/items`}
         hx-target="#backlog"
         hx-swap="outerHTML"
         {...ax({
           "x-on:keydown.escape": "open = false",
-          "hx-on::after-request": "if(event.detail.successful) this.reset()",
+          "hx-on::after-request": "if(event.detail.successful) open = false",
         })}
       >
         <input
@@ -266,12 +270,24 @@ function BacklogComposer({ slug }: { slug: string }) {
           aria-label="New backlog item"
           x-ref="title"
         />
-        <button type="submit" class="btn btn-primary">
-          Add
-        </button>
-        <button type="button" class="btn btn-ghost" x-on:click="open = false">
-          Cancel
-        </button>
+        {members.length > 0 ? (
+          <select class="select" name="assigneeId" aria-label="Assignee">
+            <option value="">Unassigned</option>
+            {members.map((m) => (
+              <option value={m.id} safe>
+                {m.name}
+              </option>
+            ))}
+          </select>
+        ) : null}
+        <div class="row gap-2">
+          <button type="submit" class="btn btn-primary btn-sm">
+            Add
+          </button>
+          <button type="button" class="btn btn-ghost btn-sm" x-on:click="open = false">
+            Cancel
+          </button>
+        </div>
       </form>
     </div>
   );

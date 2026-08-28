@@ -48,15 +48,7 @@ export function ItemCard({ item, slug }: { item: ItemCardData; slug: string }) {
   const done = Boolean(item.completedAt);
 
   return (
-    <article
-      class="card-item"
-      data-item-id={item.id}
-      tabindex="0"
-      role="button"
-      aria-label={`${item.key}: ${item.title}`}
-      {...openItemAttrs(slug, item.id)}
-      hx-trigger="click, keyup[key=='Enter']"
-    >
+    <article class="card-item" data-item-id={item.id} aria-label={`${item.key}: ${item.title}`}>
       {item.labels.length > 0 ? (
         <div class="card-labels">
           {item.labels.map(({ label }) => (
@@ -87,6 +79,18 @@ export function ItemCard({ item, slug }: { item: ItemCardData; slug: string }) {
         <DueBadge due={item.dueDate} completed={done} />
         <StoryPoints points={item.storyPoints} />
         {item.assignee ? <Avatar user={item.assignee} size="sm" /> : null}
+
+        {/* Explicit edit button — dialog only opens on intentional click */}
+        <button
+          type="button"
+          class="btn btn-icon card-edit-btn"
+          aria-label={`Edit ${item.key}`}
+          data-tooltip="Edit"
+          {...openItemAttrs(slug, item.id)}
+          hx-trigger="click"
+        >
+          <Icon name="edit" size={12} />
+        </button>
       </div>
     </article>
   );
@@ -109,11 +113,7 @@ export function BacklogRow({
     <div
       class={done ? "backlog-row item-done" : "backlog-row"}
       data-item-id={item.id}
-      role="button"
-      tabindex="0"
       aria-label={`${item.key}: ${item.title}`}
-      {...openItemAttrs(slug, item.id)}
-      hx-trigger="click, keyup[key=='Enter']"
     >
       {selectable && !done ? (
         <input
@@ -124,12 +124,7 @@ export function BacklogRow({
           {...ax({ "x-model": "selected", "x-on:click.stop": "void 0" })}
         />
       ) : null}
-      <span
-        class="drag-handle"
-        aria-label="Reorder"
-        title="Drag to reorder"
-        tabindex="-1"
-      >
+      <span class="drag-handle" aria-label="Reorder" title="Drag to reorder" tabindex="-1">
         <Icon name="grip" size={14} />
       </span>
 
@@ -149,6 +144,18 @@ export function BacklogRow({
         <DueBadge due={item.dueDate} completed={done} />
         <StoryPoints points={item.storyPoints} />
         {item.assignee ? <Avatar user={item.assignee} size="sm" /> : null}
+
+        {/* Explicit edit button — dialog only opens on intentional click */}
+        <button
+          type="button"
+          class="btn btn-icon row-edit-btn"
+          aria-label={`Edit ${item.key}`}
+          data-tooltip="Edit"
+          {...openItemAttrs(slug, item.id)}
+          hx-trigger="click"
+        >
+          <Icon name="edit" size={13} />
+        </button>
       </div>
     </div>
   );

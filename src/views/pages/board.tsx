@@ -1,7 +1,7 @@
 import type { Column, Plan, Sprint, StatusCategory } from "@prisma/client";
 import type { ItemCard as ItemCardData } from "~/lib/plans";
 import { ax } from "~/views/alpine";
-import { EmptyState } from "~/views/components";
+import { EmptyState, type UserLike } from "~/views/components";
 import { Icon } from "~/views/icons";
 import { ItemCard } from "~/views/item";
 
@@ -15,10 +15,11 @@ interface BoardProps {
   columns: BoardColumnData[];
   activeSprint: Sprint | null;
   canEdit: boolean;
+  members: UserLike[];
 }
 
 /** The whole board region. Re-rendered on `gp:refresh` when a teammate changes something. */
-export function BoardRegion({ plan, columns, activeSprint, canEdit }: BoardProps) {
+export function BoardRegion({ plan, columns, activeSprint, canEdit, members }: BoardProps) {
   const slug = plan.slug;
 
   return (
@@ -45,7 +46,7 @@ export function BoardRegion({ plan, columns, activeSprint, canEdit }: BoardProps
 
           {canEdit ? (
             <div class="column-foot">
-              <ColumnComposer slug={slug} column={column} />
+              <ColumnComposer slug={slug} column={column} members={members} />
             </div>
           ) : null}
         </section>
@@ -98,7 +99,15 @@ export function ColumnHeader({
 }
 
 /** Inline "add item" composer that stays open for rapid entry. */
-function ColumnComposer({ slug, column }: { slug: string; column: Column }) {
+function ColumnComposer({
+  slug,
+  column,
+  members,
+}: {
+  slug: string;
+  column: Column;
+  members: UserLike[];
+}) {
   return (
     <div x-data="{ open: false }">
       <button
@@ -138,6 +147,16 @@ function ColumnComposer({ slug, column }: { slug: string; column: Column }) {
           style="min-height:56px"
           {...ax({ "x-on:keydown.enter.prevent": "$el.form.requestSubmit()" })}
         />
+        {members.length > 0 ? (
+          <select class="select" name="assigneeId" aria-label="Assignee">
+            <option value="">Unassigned</option>
+            {members.map((m) => (
+              <option value={m.id} safe>
+                {m.name}
+              </option>
+            ))}
+          </select>
+        ) : null}
         <div class="row gap-2">
           <button type="submit" class="btn btn-primary btn-sm">
             Add

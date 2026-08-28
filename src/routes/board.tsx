@@ -2,7 +2,7 @@ import { Elysia, t } from "elysia";
 import { assertCan } from "~/lib/access";
 import { logActivity } from "~/lib/activity";
 import { db } from "~/lib/db";
-import { createItem, getBoard, itemCardInclude, rankForDrop } from "~/lib/plans";
+import { createItem, getBoard, itemCardInclude, planMembers, rankForDrop } from "~/lib/plans";
 import { IndexField, toIndex } from "~/lib/schema";
 import { publishToPlan } from "~/lib/realtime";
 import { planScope } from "~/plugins/plan-scope";
@@ -49,8 +49,12 @@ export const boardRoutes = new Elysia({ prefix: "/p/:slug" })
   // -------------------------------------------------------------- full page
   .get("/board", async ({ access, currentUser, sidebarPlans }) => {
     const { plan } = access;
-    const activeSprint = await activeSprintFor(plan.id);
+    const [activeSprint, membersRaw] = await Promise.all([
+      activeSprintFor(plan.id),
+      planMembers(plan.id),
+    ]);
     const columns = await loadColumns(plan.id, activeSprint?.id ?? null);
+    const members = membersRaw.map((m) => m.user);
     const canEdit = access.can("editItems");
 
     return (
@@ -77,7 +81,7 @@ export const boardRoutes = new Elysia({ prefix: "/p/:slug" })
         {columns.length === 0 ? (
           <BoardEmpty />
         ) : (
-          <BoardRegion plan={plan} columns={columns} activeSprint={activeSprint} canEdit={canEdit} />
+          <BoardRegion plan={plan} columns={columns} activeSprint={activeSprint} canEdit={canEdit} members={members} />
         )}
       </PlanLayout>
     );
@@ -86,7 +90,10 @@ export const boardRoutes = new Elysia({ prefix: "/p/:slug" })
   // ---------------------------------------------------------- board fragment
   .get("/board/fragment", async ({ access }) => {
     const { plan } = access;
-    const activeSprint = await activeSprintFor(plan.id);
+    const [activeSprint, membersRaw] = await Promise.all([
+      activeSprintFor(plan.id),
+      planMembers(plan.id),
+    ]);
     const columns = await loadColumns(plan.id, activeSprint?.id ?? null);
 
     return (
@@ -95,6 +102,7 @@ export const boardRoutes = new Elysia({ prefix: "/p/:slug" })
         columns={columns}
         activeSprint={activeSprint}
         canEdit={access.can("editItems")}
+        members={membersRaw.map((m) => m.user)}
       />
     );
   })
@@ -211,6 +219,7 @@ export const boardRoutes = new Elysia({ prefix: "/p/:slug" })
       const item = await createItem(plan.id, currentUser.id, {
         title: body.title.trim(),
         columnId: body.columnId,
+        assigneeId: body.assigneeId || null,
         // Items added from the board belong to whatever the board is showing.
         sprintId: activeSprint?.id ?? null,
       });
@@ -228,6 +237,7 @@ export const boardRoutes = new Elysia({ prefix: "/p/:slug" })
       body: t.Object({
         title: t.String({ minLength: 1, maxLength: 200 }),
         columnId: t.String({ minLength: 1 }),
+        assigneeId: t.Optional(t.String()),
       }),
     },
   );

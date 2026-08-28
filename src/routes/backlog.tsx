@@ -2,7 +2,7 @@ import { Elysia, t } from "elysia";
 import { assertCan } from "~/lib/access";
 import { logActivity } from "~/lib/activity";
 import { db } from "~/lib/db";
-import { createItem, rankForDrop } from "~/lib/plans";
+import { createItem, planMembers, rankForDrop } from "~/lib/plans";
 import { IndexField, toIndex } from "~/lib/schema";
 import { publishToPlan } from "~/lib/realtime";
 import { loadBacklogGroups } from "~/lib/views-data";
@@ -37,7 +37,11 @@ export const backlogRoutes = new Elysia({ prefix: "/p/:slug" })
 
   .get("/backlog", async ({ access, currentUser, sidebarPlans }) => {
     const { plan } = access;
-    const groups = await loadBacklogGroups(plan.id);
+    const [groups, membersRaw] = await Promise.all([
+      loadBacklogGroups(plan.id),
+      planMembers(plan.id),
+    ]);
+    const members = membersRaw.map((m) => m.user);
 
     return (
       <PlanLayout
@@ -57,6 +61,7 @@ export const backlogRoutes = new Elysia({ prefix: "/p/:slug" })
             groups={groups}
             canEdit={access.can("editItems")}
             canManageSprints={access.can("manageSprints")}
+            members={members}
           />
         </div>
       </PlanLayout>
@@ -64,13 +69,17 @@ export const backlogRoutes = new Elysia({ prefix: "/p/:slug" })
   })
 
   .get("/backlog/fragment", async ({ access }) => {
-    const groups = await loadBacklogGroups(access.plan.id);
+    const [groups, membersRaw] = await Promise.all([
+      loadBacklogGroups(access.plan.id),
+      planMembers(access.plan.id),
+    ]);
     return (
       <BacklogRegion
         plan={access.plan}
         groups={groups}
         canEdit={access.can("editItems")}
         canManageSprints={access.can("manageSprints")}
+        members={membersRaw.map((m) => m.user)}
       />
     );
   })
@@ -144,20 +153,30 @@ export const backlogRoutes = new Elysia({ prefix: "/p/:slug" })
 
       await createItem(access.plan.id, currentUser.id, {
         title: body.title.trim(),
+        assigneeId: body.assigneeId || null,
         sprintId: null,
       });
 
       publishToPlan(access.plan.id, "item.changed", { by: currentUser.id });
 
-      const groups = await loadBacklogGroups(access.plan.id);
+      const [groups, membersRaw] = await Promise.all([
+        loadBacklogGroups(access.plan.id),
+        planMembers(access.plan.id),
+      ]);
       return (
         <BacklogRegion
           plan={access.plan}
           groups={groups}
           canEdit={access.can("editItems")}
           canManageSprints={access.can("manageSprints")}
+          members={membersRaw.map((m) => m.user)}
         />
       );
     },
-    { body: t.Object({ title: t.String({ minLength: 1, maxLength: 200 }) }) },
+    {
+      body: t.Object({
+        title: t.String({ minLength: 1, maxLength: 200 }),
+        assigneeId: t.Optional(t.String()),
+      }),
+    },
   );

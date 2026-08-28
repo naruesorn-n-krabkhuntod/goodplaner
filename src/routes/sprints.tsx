@@ -6,6 +6,7 @@ import { buildBurndown, sprintStats } from "~/lib/burndown";
 import { db } from "~/lib/db";
 import { publishToPlan } from "~/lib/realtime";
 import { loadBacklogGroups } from "~/lib/views-data";
+import { planMembers } from "~/lib/plans";
 import { planScope } from "~/plugins/plan-scope";
 import { PlanLayout } from "~/views/plan-layout";
 import { BacklogRegion } from "~/views/pages/backlog";
@@ -41,13 +42,17 @@ async function loadSprints(planId: string): Promise<SprintCardData[]> {
  */
 async function regionForRequest(request: Request, plan: Plan, access: PlanAccess) {
   if (request.headers.get("hx-target") === "backlog") {
-    const groups = await loadBacklogGroups(plan.id);
+    const [groups, membersRaw] = await Promise.all([
+      loadBacklogGroups(plan.id),
+      planMembers(plan.id),
+    ]);
     return (
       <BacklogRegion
         plan={plan}
         groups={groups}
         canEdit={access.can("editItems")}
         canManageSprints={access.can("manageSprints")}
+        members={membersRaw.map((m) => m.user)}
       />
     );
   }
