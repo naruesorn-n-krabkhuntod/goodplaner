@@ -2,6 +2,7 @@ import type { Children } from "@kitajs/html";
 import type { Column, ItemType, Priority, Sprint } from "@prisma/client";
 import type { ItemCard as ItemCardData } from "~/lib/plans";
 import { formatDate, relativeTime, toDateInput } from "~/lib/format";
+import { ax } from "~/views/alpine";
 import {
   Avatar,
   DueBadge,
@@ -93,7 +94,15 @@ export function ItemCard({ item, slug }: { item: ItemCardData; slug: string }) {
 
 // ============================= Backlog row =================================
 
-export function BacklogRow({ item, slug }: { item: ItemCardData; slug: string }) {
+export function BacklogRow({
+  item,
+  slug,
+  selectable = false,
+}: {
+  item: ItemCardData;
+  slug: string;
+  selectable?: boolean;
+}) {
   const done = Boolean(item.completedAt);
 
   return (
@@ -106,6 +115,15 @@ export function BacklogRow({ item, slug }: { item: ItemCardData; slug: string })
       {...openItemAttrs(slug, item.id)}
       hx-trigger="click, keyup[key=='Enter']"
     >
+      {selectable && !done ? (
+        <input
+          type="checkbox"
+          class="checkbox backlog-select-cb"
+          aria-label={`Select ${item.key}`}
+          value={item.id}
+          {...ax({ "x-model": "selected", "x-on:click.stop": "void 0" })}
+        />
+      ) : null}
       <span
         class="drag-handle"
         aria-label="Reorder"

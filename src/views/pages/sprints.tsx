@@ -19,6 +19,7 @@ interface SprintsProps {
 
 export function SprintsRegion({ plan, sprints, canManage }: SprintsProps) {
   const slug = plan.slug;
+  const hasActive = sprints.some((d) => d.sprint.state === "ACTIVE");
 
   return (
     <div
@@ -50,7 +51,31 @@ export function SprintsRegion({ plan, sprints, canManage }: SprintsProps) {
           }
         />
       ) : (
-        sprints.map((data) => <SprintCard slug={slug} data={data} canManage={canManage} />)
+        <>
+          {sprints.map((data) => (
+            <SprintCard slug={slug} data={data} canManage={canManage} hasActive={hasActive} />
+          ))}
+          {canManage ? (
+            <div style="display:flex; justify-content:flex-end;">
+              <button
+                type="button"
+                class="btn btn-secondary btn-sm"
+                hx-post={`/p/${slug}/sprints`}
+                hx-target="#sprints"
+                hx-swap="outerHTML"
+                disabled={hasActive}
+                title={
+                  hasActive
+                    ? "Complete the active sprint before creating a new one"
+                    : "Create a new sprint"
+                }
+              >
+                <Icon name="plus" size={14} />
+                New sprint
+              </button>
+            </div>
+          ) : null}
+        </>
       )}
     </div>
   );
@@ -60,13 +85,16 @@ function SprintCard({
   slug,
   data,
   canManage,
+  hasActive,
 }: {
   slug: string;
   data: SprintCardData;
   canManage: boolean;
+  hasActive: boolean;
 }) {
   const { sprint, stats, burndown } = data;
   const base = `/p/${slug}/sprints/${sprint.id}`;
+  const canAdd = canManage && sprint.state !== "COMPLETED";
 
   return (
     <section class="sprint-card" data-state={sprint.state} aria-labelledby={`sprint-${sprint.id}`}>
@@ -134,6 +162,9 @@ function SprintCard({
         ) : null}
       </header>
 
+      {/* Add backlog items picker — lazy-loaded into a dialog */}
+      {canAdd ? <AddItemsPanel base={base} slug={slug} sprintId={sprint.id} /> : null}
+
       <div class="sprint-stats">
         <div class="sprint-stat">
           <div class="sprint-stat-value">
@@ -173,6 +204,74 @@ function SprintCard({
         </div>
       ) : null}
     </section>
+  );
+}
+
+/**
+ * Expandable panel that lazy-loads backlog candidates and lets the user pick
+ * which items to pull into this sprint.
+ *
+ * Rendered as a details/summary so it works without JS; when JS is present
+ * htmx loads the candidate list on first open.
+ */
+function AddItemsPanel({
+  base,
+  slug,
+  sprintId,
+}: {
+  base: string;
+  slug: string;
+  sprintId: string;
+}) {
+  return (
+    <details
+      class="sprint-add-panel"
+      {...ax({ "x-data": "{ loaded: false }", "x-on:toggle": "if ($el.open && !loaded) { loaded = true; htmx.trigger($el.querySelector('[data-load-trigger]'), 'load-candidates') }" })}
+    >
+      <summary class="sprint-add-toggle">
+        <Icon name="plus" size={14} />
+        Add backlog items
+      </summary>
+
+      {/* htmx target for the lazy-loaded list */}
+      <div
+        id={`candidates-${sprintId}`}
+        data-load-trigger
+        hx-get={`${base}/backlog-candidates`}
+        hx-trigger="load-candidates"
+        hx-target={`#candidates-${sprintId}`}
+        hx-swap="innerHTML"
+      >
+        <p class="text-sm text-tertiary" style="padding: var(--space-3) var(--space-4);">
+          Loading…
+        </p>
+      </div>
+
+      {/* The form wraps just the submit button; checkboxes use form= to associate */}
+      <form
+        id="add-items-form"
+        hx-post={`${base}/add-items`}
+        hx-target="#sprints"
+        hx-swap="outerHTML"
+        {...ax({
+          "x-on:htmx:after-request": "if(event.detail.successful) $el.closest('details').removeAttribute('open')",
+        })}
+      >
+        <div class="sprint-add-footer">
+          <button type="submit" class="btn btn-primary btn-sm">
+            <Icon name="check" size={14} />
+            Add to sprint
+          </button>
+          <button
+            type="button"
+            class="btn btn-ghost btn-sm"
+            {...ax({ "x-on:click": "$el.closest('details').removeAttribute('open')" })}
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    </details>
   );
 }
 

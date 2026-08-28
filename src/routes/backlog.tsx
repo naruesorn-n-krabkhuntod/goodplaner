@@ -11,6 +11,27 @@ import { Icon } from "~/views/icons";
 import { PlanLayout } from "~/views/plan-layout";
 import { BacklogRegion } from "~/views/pages/backlog";
 
+async function NewSprintButton({ slug, planId }: { slug: string; planId: string }) {
+  const active = await db.sprint.findFirst({
+    where: { planId, state: "ACTIVE" },
+    select: { name: true },
+  });
+  return (
+    <button
+      type="button"
+      class="btn btn-secondary btn-sm"
+      hx-post={`/p/${slug}/sprints`}
+      hx-target="#backlog"
+      hx-swap="outerHTML"
+      disabled={Boolean(active)}
+      title={active ? `${active.name} is active — complete it first` : "Create a new sprint"}
+    >
+      <Icon name="plus" size={14} />
+      New sprint
+    </button>
+  );
+}
+
 export const backlogRoutes = new Elysia({ prefix: "/p/:slug" })
   .use(planScope)
 
@@ -26,16 +47,7 @@ export const backlogRoutes = new Elysia({ prefix: "/p/:slug" })
         tab="backlog"
         actions={
           access.can("manageSprints") ? (
-            <button
-              type="button"
-              class="btn btn-secondary btn-sm"
-              hx-post={`/p/${plan.slug}/sprints`}
-              hx-target="#backlog"
-              hx-swap="outerHTML"
-            >
-              <Icon name="plus" size={14} />
-              New sprint
-            </button>
+            <NewSprintButton slug={plan.slug} planId={plan.id} />
           ) : null
         }
       >

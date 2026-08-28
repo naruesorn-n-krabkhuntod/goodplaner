@@ -5,6 +5,7 @@ import { ax } from "~/views/alpine";
 import { EmptyState } from "~/views/components";
 import { Icon } from "~/views/icons";
 import { BacklogRow } from "~/views/item";
+import { Children } from "@kitajs/html";
 
 export interface BacklogGroupData {
   sprint: Sprint | null;
@@ -24,12 +25,15 @@ function totalPoints(items: ItemCardData[]): number {
 
 /**
  * Backlog: one ranked list split into sprints plus the unassigned tail.
- * Dragging a row between groups is what assigns it to a sprint.
+ * Dragging a row between groups assigns it to a sprint.
+ * Checking the checkboxes in the backlog tail and pressing "New sprint" creates
+ * a sprint with those items pre-loaded.
  */
 export function BacklogRegion({ plan, groups, canEdit, canManageSprints }: BacklogProps) {
   const slug = plan.slug;
   const backlogGroup = groups.find((g) => g.sprint === null);
   const sprintGroups = groups.filter((g) => g.sprint !== null);
+  const hasActive = sprintGroups.some((g) => g.sprint?.state === "ACTIVE");
 
   return (
     <div
@@ -41,6 +45,7 @@ export function BacklogRegion({ plan, groups, canEdit, canManageSprints }: Backl
       hx-get={`/p/${slug}/backlog/fragment`}
       hx-trigger="gp:refresh"
       hx-swap="outerHTML"
+      {...(canManageSprints ? ax({ "x-data": "backlogSelect()" }) : {})}
     >
       {sprintGroups.map(({ sprint, items }) => (
         <BacklogGroup
@@ -49,6 +54,7 @@ export function BacklogRegion({ plan, groups, canEdit, canManageSprints }: Backl
           items={items}
           canEdit={canEdit}
           canManageSprints={canManageSprints}
+          selectable={false}
         />
       ))}
 
@@ -58,7 +64,49 @@ export function BacklogRegion({ plan, groups, canEdit, canManageSprints }: Backl
         items={backlogGroup?.items ?? []}
         canEdit={canEdit}
         canManageSprints={canManageSprints}
+        selectable={canManageSprints}
       />
+
+      {/* Floating action bar — appears when items are selected */}
+      {canManageSprints ? (
+        <div
+          class="backlog-select-bar"
+          x-show="selected.length > 0"
+          x-cloak=""
+          x-transition=""
+        >
+          <span class="text-sm" x-text="`${selected.length} item${selected.length === 1 ? '' : 's'} selected`" />
+          <form
+            hx-post={`/p/${slug}/sprints`}
+            hx-target="#backlog"
+            hx-swap="outerHTML"
+            {...ax({ "x-on:submit": "appendSelectedIds($event)" })}
+          >
+            <button
+              type="submit"
+              class="btn btn-primary btn-sm"
+              disabled={hasActive}
+              title={
+                hasActive
+                  ? "Complete the active sprint first"
+                  : "Create a new sprint with selected items"
+              }
+            >
+              <Icon name="sprint" size={14} />
+              <span x-text="`New sprint from ${selected.length} item${selected.length === 1 ? '' : 's'}`">
+                New sprint from selected
+              </span>
+            </button>
+          </form>
+          <button
+            type="button"
+            class="btn btn-ghost btn-sm"
+            {...ax({ "x-on:click": "selected = []" })}
+          >
+            Clear
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -69,12 +117,14 @@ function BacklogGroup({
   items,
   canEdit,
   canManageSprints,
+  selectable,
 }: {
   slug: string;
   sprint: Sprint | null;
   items: ItemCardData[];
   canEdit: boolean;
   canManageSprints: boolean;
+  selectable: boolean;
 }) {
   const points = totalPoints(items);
   const title = sprint ? sprint.name : "Backlog";
@@ -141,7 +191,7 @@ function BacklogGroup({
 
       <div class="backlog-rows" data-sprint-id={sprint?.id ?? ""}>
         {items.map((item) => (
-          <BacklogRow item={item} slug={slug} />
+          <BacklogRow item={item} slug={slug} selectable={selectable} />
         ))}
       </div>
 

@@ -11,6 +11,7 @@ import { Icon } from "~/views/icons";
 import { PlanLayout } from "~/views/plan-layout";
 import { BacklogRegion } from "~/views/pages/backlog";
 import { type SprintCardData, SprintsRegion } from "~/views/pages/sprints";
+import { TypeMark } from "~/views/components";
 
 async function loadSprints(planId: string): Promise<SprintCardData[]> {
   const sprints = await db.sprint.findMany({
@@ -112,36 +113,85 @@ export const sprintRoutes = new Elysia({ prefix: "/p/:slug" })
   })
 
   // --------------------------------------------------------------- create
-  .post("/sprints", async ({ access, currentUser, request }) => {
-    assertCan(access, "manageSprints");
-    const { plan } = access;
+  .post(
+    "/sprints",
+    async ({ access, currentUser, request, body, set }) => {
+      assertCan(access, "manageSprints");
+      const { plan } = access;
 
-    const last = await db.sprint.findFirst({
-      where: { planId: plan.id },
-      orderBy: { position: "desc" },
-      select: { position: true },
-    });
-    const position = (last?.position ?? -1) + 1;
+      // Only one active sprint at a time — a second would make the board ambiguous.
+      const active = await db.sprint.findFirst({
+        where: { planId: plan.id, state: "ACTIVE" },
+        select: { name: true },
+      });
+      if (active) {
+        set.status = 409;
+        set.headers["hx-toast"] = JSON.stringify({
+          message: `${active.name} is still active. Complete it before creating a new sprint.`,
+          variant: "error",
+        });
+        return regionForRequest(request, plan, access);
+      }
 
-    // Default to a two-week window starting today.
-    const startDate = new Date();
-    const endDate = new Date(startDate.getTime() + 13 * 86_400_000);
+      const last = await db.sprint.findFirst({
+        where: { planId: plan.id },
+        orderBy: { position: "desc" },
+        select: { position: true },
+      });
+      const position = (last?.position ?? -1) + 1;
 
-    const sprint = await db.sprint.create({
-      data: { planId: plan.id, name: `Sprint ${position + 1}`, position, startDate, endDate },
-    });
+      // Default to a two-week window starting today.
+      const startDate = new Date();
+      const endDate = new Date(startDate.getTime() + 13 * 86_400_000);
 
-    await logActivity({
-      planId: plan.id,
-      userId: currentUser.id,
-      sprintId: sprint.id,
-      action: "sprint.created",
-      meta: { name: sprint.name },
-    });
-    publishToPlan(plan.id, "sprint.changed", { sprintId: sprint.id });
+      const sprint = await db.sprint.create({
+        data: { planId: plan.id, name: `Sprint ${position + 1}`, position, startDate, endDate },
+      });
 
-    return regionForRequest(request, plan, access);
-  })
+      // If the caller passed itemIds, move those items straight into the sprint.
+      // htmx sends repeated fields as either an array or a single string
+      // depending on how many were selected; normalise to an array.
+      const rawIds = body?.itemIds;
+      const itemIds: string[] = Array.isArray(rawIds)
+        ? rawIds
+        : rawIds
+          ? [rawIds]
+          : [];
+      if (itemIds.length > 0) {
+        await db.item.updateMany({
+          where: { id: { in: itemIds }, planId: plan.id, archivedAt: null },
+          data: { sprintId: sprint.id },
+        });
+        await logActivity({
+          planId: plan.id,
+          userId: currentUser.id,
+          sprintId: sprint.id,
+          action: "sprint.item_added",
+          meta: { name: sprint.name, count: itemIds.length },
+        });
+      }
+
+      await logActivity({
+        planId: plan.id,
+        userId: currentUser.id,
+        sprintId: sprint.id,
+        action: "sprint.created",
+        meta: { name: sprint.name },
+      });
+      publishToPlan(plan.id, "sprint.changed", { sprintId: sprint.id });
+
+      return regionForRequest(request, plan, access);
+    },
+    {
+      body: t.Optional(
+        t.Object({
+          itemIds: t.Optional(
+            t.Union([t.Array(t.String()), t.String()]),
+          ),
+        }),
+      ),
+    },
+  )
 
   // ---------------------------------------------------------------- update
   .patch(
@@ -290,4 +340,127 @@ export const sprintRoutes = new Elysia({ prefix: "/p/:slug" })
     });
 
     return regionForRequest(request, plan, access);
+  })
+
+  // ----------------------------------------- add backlog items to a sprint
+  .post(
+    "/sprints/:sprintId/add-items",
+    async ({ access, currentUser, params, body, request, set }) => {
+      assertCan(access, "editItems");
+      const { plan } = access;
+
+      const sprint = await db.sprint.findFirst({
+        where: { id: params.sprintId, planId: plan.id, state: { not: "COMPLETED" } },
+      });
+      if (!sprint) {
+        set.status = 404;
+        return "Sprint not found";
+      }
+
+      const raw = body.itemIds;
+      const itemIds: string[] = Array.isArray(raw) ? raw : [raw];
+      if (itemIds.length === 0) {
+        set.status = 400;
+        return "No items selected";
+      }
+
+      await db.item.updateMany({
+        where: { id: { in: itemIds }, planId: plan.id, archivedAt: null, sprintId: null },
+        data: { sprintId: sprint.id },
+      });
+
+      await logActivity({
+        planId: plan.id,
+        userId: currentUser.id,
+        sprintId: sprint.id,
+        action: "sprint.item_added",
+        meta: { name: sprint.name, count: itemIds.length },
+      });
+      publishToPlan(plan.id, "item.changed", { by: currentUser.id });
+
+      return regionForRequest(request, plan, access);
+    },
+    {
+      body: t.Object({
+        itemIds: t.Union([t.Array(t.String(), { minItems: 1 }), t.String({ minLength: 1 })]),
+      }),
+    },
+  )
+
+  // --------------------------------------- backlog items for the picker modal
+  .get("/sprints/:sprintId/backlog-candidates", async ({ access, params, set }) => {
+    const sprint = await db.sprint.findFirst({
+      where: { id: params.sprintId, planId: access.plan.id, state: { not: "COMPLETED" } },
+    });
+    if (!sprint) {
+      set.status = 404;
+      return "Sprint not found";
+    }
+
+    const items = await db.item.findMany({
+      where: { planId: access.plan.id, sprintId: null, archivedAt: null, completedAt: null },
+      select: { id: true, key: true, title: true, type: true, priority: true, storyPoints: true },
+      orderBy: { rank: "asc" },
+    });
+
+    return <BacklogCandidateList items={items} sprintId={sprint.id} slug={access.plan.slug} />
   });
+
+// ============================================================= components
+
+interface CandidateItem {
+  id: string;
+  key: string;
+  title: string;
+  type: string;
+  priority: string;
+  storyPoints: number | null;
+}
+
+function BacklogCandidateList({
+  items,
+  sprintId,
+  slug,
+}: {
+  items: CandidateItem[];
+  sprintId: string;
+  slug: string;
+}) {
+  return (
+    <div id="backlog-candidate-list">
+      {items.length === 0 ? (
+        <p class="text-sm text-tertiary" style="padding: var(--space-4); text-align: center;">
+          No backlog items available. All items are already in a sprint.
+        </p>
+      ) : (
+        <ul class="candidate-list">
+          {items.map((item) => (
+            <li class="candidate-row">
+              <label class="candidate-label">
+                <input
+                  type="checkbox"
+                  class="checkbox"
+                  name="itemIds"
+                  value={item.id}
+                  form="add-items-form"
+                />
+                <TypeMark type={item.type as never} />
+                <span class="item-row-key text-xs text-tertiary" safe>
+                  {item.key}
+                </span>
+                <span class="candidate-title truncate" safe>
+                  {item.title}
+                </span>
+                {item.storyPoints ? (
+                  <span class="points" title="Story points">
+                    {item.storyPoints}
+                  </span>
+                ) : null}
+              </label>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}

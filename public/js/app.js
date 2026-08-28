@@ -215,3 +215,44 @@ document.addEventListener("htmx:afterRequest", (event) => {
     toast(header);
   }
 });
+
+// ====================== Backlog multi-select Alpine component ================
+
+/**
+ * Tracks which backlog items are checked, and wires the "New sprint from N
+ * items" form to send their ids as JSON before submission.
+ */
+function backlogSelect() {
+  return {
+    selected: [],
+
+    /**
+     * Called from the form's x-on:submit before htmx picks it up.
+     * Injects hidden inputs for each selected id so the form body includes
+     * itemIds[], which the server reads as an array.
+     */
+    appendSelectedIds(event) {
+      const form = event.target;
+      // Remove any previously injected inputs.
+      form.querySelectorAll(".injected-item-id").forEach((el) => el.remove());
+      this.selected.forEach((id) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = "itemIds";
+        input.value = id;
+        input.className = "injected-item-id";
+        form.appendChild(input);
+      });
+    },
+  };
+}
+
+// Expose for Alpine x-data="backlogSelect()"
+if (window.Alpine) {
+  window.backlogSelect = backlogSelect;
+} else {
+  document.addEventListener("alpine:init", () => {
+    window.backlogSelect = backlogSelect;
+  });
+  window.backlogSelect = backlogSelect;
+}

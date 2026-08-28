@@ -861,3 +861,98 @@
     bottom: auto;
   }
 }
+
+/* ===================== Backlog multi-select ================================ */
+
+.backlog-select-cb {
+  flex: none;
+  /* prevent the row's click-to-open-dialog from firing when checking */
+  pointer-events: auto;
+}
+
+/* Floating action bar that appears when items are selected */
+.backlog-select-bar {
+  position: sticky;
+  bottom: var(--space-4);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(8px);
+}
+
+/* ===================== Sprint add-items panel ============================== */
+
+.sprint-add-panel {
+  border-top: 1px solid var(--divider);
+}
+
+.sprint-add-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  transition: background var(--duration-fast) var(--ease);
+}
+
+.sprint-add-toggle:hover {
+  background: var(--wash-hover);
+  color: var(--text-primary);
+}
+
+.sprint-add-toggle::-webkit-details-marker { display: none; }
+
+.sprint-add-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--divider);
+  background: var(--bg-subtle);
+}
+
+/* ===================== Candidate list (picker in sprint add panel) ========= */
+
+.candidate-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.candidate-row {
+  border-bottom: 1px solid var(--divider);
+}
+
+.candidate-row:last-child {
+  border-bottom: none;
+}
+
+.candidate-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease);
+}
+
+.candidate-label:hover {
+  background: var(--wash-hover);
+}
+
+.candidate-title {
+  flex: 1;
+  font-size: var(--text-sm);
+}
