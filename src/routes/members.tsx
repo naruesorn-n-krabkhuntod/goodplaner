@@ -334,7 +334,13 @@ export const memberRoutes = new Elysia({ prefix: "/p/:slug" })
     },
     {
       body: t.Object({
-        email: t.Optional(t.String({ maxLength: 200 })),
+        // Allow empty string (→ open link) or a valid email address.
+        email: t.Optional(
+          t.Union([
+            t.Literal(""),
+            t.String({ maxLength: 200, pattern: "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$" }),
+          ]),
+        ),
         role: t.Optional(
           t.Union([t.Literal("ADMIN"), t.Literal("MEMBER"), t.Literal("VIEWER")]),
         ),
@@ -346,7 +352,21 @@ export const memberRoutes = new Elysia({ prefix: "/p/:slug" })
     assertCan(access, "manageMembers");
     const { plan, role } = access;
 
+    const invite = await db.invite.findFirst({
+      where: { id: params.inviteId, planId: plan.id },
+      select: { role: true },
+    });
     await db.invite.deleteMany({ where: { id: params.inviteId, planId: plan.id } });
+
+    if (invite) {
+      await logActivity({
+        planId: plan.id,
+        userId: currentUser.id,
+        action: "invite.revoked",
+        meta: { role: invite.role },
+      });
+    }
+
     return renderMembers(plan.id, plan.slug, currentUser.id, role, true);
   })
 

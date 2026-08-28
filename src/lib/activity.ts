@@ -21,6 +21,8 @@ export type ActivityAction =
   | "item.reopened"
   | "item.archived"
   | "item.commented"
+  | "item.labeled"
+  | "invite.revoked"
   | "sprint.created"
   | "sprint.updated"
   | "sprint.started"
@@ -99,6 +101,13 @@ export function describeActivity(action: string, meta: Record<string, unknown>):
       return "archived";
     case "item.commented":
       return "commented on";
+    case "item.labeled": {
+      const label = typeof meta.label === "string" ? meta.label : null;
+      const act = typeof meta.action === "string" ? meta.action : null;
+      return label && act ? `${act} label "${label}"` : "changed the labels";
+    }
+    case "invite.revoked":
+      return "revoked an invite link";
 
     case "sprint.created":
       return name ? `created sprint ${name}` : "created a sprint";

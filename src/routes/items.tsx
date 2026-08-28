@@ -314,7 +314,7 @@ export const itemRoutes = new Elysia({ prefix: "/p/:slug" })
   // -------------------------------------------------------------- checklist
   .post(
     "/items/:itemId/checklist",
-    async ({ access, params, body, set }) => {
+    async ({ access, currentUser, params, body, set }) => {
       assertCan(access, "editItems");
 
       const item = await db.item.findFirst({
@@ -339,6 +339,14 @@ export const itemRoutes = new Elysia({ prefix: "/p/:slug" })
         },
       });
 
+      await logActivity({
+        planId: access.plan.id,
+        userId: currentUser.id,
+        itemId: item.id,
+        action: "item.updated",
+        meta: { key: item.key, field: "checklist" },
+      });
+
       return renderChecklist(access.plan.slug, item.id, true);
     },
     { body: t.Object({ text: t.String({ minLength: 1, maxLength: 200 }) }) },
@@ -359,7 +367,7 @@ export const itemRoutes = new Elysia({ prefix: "/p/:slug" })
     return renderChecklist(access.plan.slug, params.itemId, true);
   })
 
-  .delete("/items/:itemId/checklist/:entryId", async ({ access, params, set }) => {
+  .delete("/items/:itemId/checklist/:entryId", async ({ access, currentUser, params, set }) => {
     assertCan(access, "editItems");
 
     const entry = await db.checklistItem.findFirst({
@@ -371,11 +379,21 @@ export const itemRoutes = new Elysia({ prefix: "/p/:slug" })
     }
 
     await db.checklistItem.delete({ where: { id: entry.id } });
+
+    const item = await db.item.findUnique({ where: { id: params.itemId }, select: { key: true } });
+    await logActivity({
+      planId: access.plan.id,
+      userId: currentUser.id,
+      itemId: params.itemId,
+      action: "item.updated",
+      meta: { key: item?.key ?? "", field: "checklist" },
+    });
+
     return renderChecklist(access.plan.slug, params.itemId, true);
   })
 
   // ----------------------------------------------------------------- labels
-  .post("/items/:itemId/labels/:labelId", async ({ access, params, set }) => {
+  .post("/items/:itemId/labels/:labelId", async ({ access, currentUser, params, set }) => {
     assertCan(access, "editItems");
     const { plan } = access;
 
@@ -399,6 +417,14 @@ export const itemRoutes = new Elysia({ prefix: "/p/:slug" })
     } else {
       await db.itemLabel.create({ data: { itemId: item.id, labelId: label.id } });
     }
+
+    await logActivity({
+      planId: plan.id,
+      userId: currentUser.id,
+      itemId: item.id,
+      action: "item.labeled",
+      meta: { key: item.key, label: label.name, action: existing ? "removed" : "added" },
+    });
 
     publishToPlan(plan.id, "item.changed", { itemId: item.id });
 
