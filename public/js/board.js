@@ -9,6 +9,15 @@
 
 const sortables = new WeakMap();
 
+// Sortable fires a click on the dragged element right after drag ends.
+// We suppress it so items don't accidentally open when the user drags them.
+let justDragged = false;
+function markDragEnd() {
+  justDragged = true;
+  // Two rAFs: one for Sortable's own cleanup tick, one for the click event.
+  requestAnimationFrame(() => requestAnimationFrame(() => { justDragged = false; }));
+}
+
 function itemIds(container) {
   return [...container.querySelectorAll("[data-item-id]")].map((el) => el.dataset.itemId);
 }
@@ -50,6 +59,7 @@ function mountBoard(root) {
       },
 
       onEnd(event) {
+        markDragEnd();
         delete root.dataset.dragging;
 
         const card = event.item;
@@ -103,6 +113,8 @@ function mountBacklog(root) {
       fallbackOnBody: true,
 
       onEnd(event) {
+        markDragEnd();
+
         const row = event.item;
         const target = event.to;
         // Empty string means "back to the unassigned backlog".
@@ -122,12 +134,16 @@ function mountBacklog(root) {
 
 // ------------------------------- Wiring ------------------------------------
 
-/**
- * The drag handle sits inside a row that opens the item dialog on click.
- * Delegated here rather than as an inline onclick so the markup stays free of
- * event-handler attributes (and a strict CSP stays possible).
- */
+// Intercept clicks on the capture phase so we can suppress post-drag clicks
+// before htmx or Alpine see them.
 document.addEventListener("click", (event) => {
+  // Suppress the spurious click Sortable fires right after a drag ends.
+  if (justDragged) {
+    event.stopPropagation();
+    event.preventDefault();
+    return;
+  }
+  // Clicking the drag handle should never open the item dialog.
   if (event.target.closest(".drag-handle")) event.stopPropagation();
 }, true);
 

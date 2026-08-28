@@ -48,7 +48,7 @@ export function BacklogRegion({ plan, groups, canEdit, canManageSprints }: Backl
       hx-get={`/p/${slug}/backlog/fragment`}
       hx-trigger="gp:refresh"
       hx-swap="outerHTML"
-      {...(canManageSprints ? ax({ "x-data": "backlogSelect()" }) : {})}
+      {...(canManageSprints ? { "x-data": "backlogSelect" } : {})}
     >
       {sprintGroups.map(({ sprint, items }) => (
         <BacklogGroup

@@ -247,12 +247,10 @@ function backlogSelect() {
   };
 }
 
-// Expose for Alpine x-data="backlogSelect()"
-if (window.Alpine) {
-  window.backlogSelect = backlogSelect;
-} else {
-  document.addEventListener("alpine:init", () => {
-    window.backlogSelect = backlogSelect;
-  });
-  window.backlogSelect = backlogSelect;
-}
+// Expose for Alpine x-data="backlogSelect".
+// Set on window immediately (before Alpine processes the DOM) AND register
+// via Alpine.data() inside alpine:init so both lookup paths work.
+window.backlogSelect = backlogSelect;
+document.addEventListener("alpine:init", () => {
+  if (window.Alpine) window.Alpine.data("backlogSelect", backlogSelect);
+});

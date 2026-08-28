@@ -2,6 +2,9 @@
    Board, backlog, sprints and whiteboard
    ========================================================================= */
 
+/* Hide Alpine-managed elements until Alpine initialises (prevents flash). */
+[x-cloak] { display: none !important; }
+
 /* ================================ Board ================================== */
 
 .board {
@@ -872,18 +875,21 @@
 
 /* Floating action bar that appears when items are selected */
 .backlog-select-bar {
-  position: sticky;
-  bottom: var(--space-4);
-  z-index: 10;
+  position: fixed;
+  bottom: var(--space-5);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-3) var(--space-5);
   background: var(--bg-raised);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  backdrop-filter: blur(8px);
+  border-radius: var(--radius-full, 9999px);
+  box-shadow: 0 8px 32px rgba(0,0,0,.24);
+  backdrop-filter: blur(12px);
+  white-space: nowrap;
 }
 
 /* ===================== Sprint add-items panel ============================== */
