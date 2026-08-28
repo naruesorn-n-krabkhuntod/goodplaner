@@ -22,27 +22,19 @@ const isProduction = NODE_ENV === "production";
 
 /**
  * The public origin. Everything user-facing is built from it: the Google
- * redirect URI and the invite links people paste to each other.
+ * redirect URI and the invite links people paste to each other, so it has to
+ * be the address a browser on the open internet can actually reach.
  *
- * In production it must be set explicitly — falling back to localhost there
- * produces invite links nobody can open and an OAuth `redirect_uri_mismatch`,
- * neither of which points at the real cause.
- */
-/**
  * Railway sets RAILWAY_PUBLIC_DOMAIN as soon as the service has a domain, so
- * the origin can be inferred rather than pasted in by hand. Without this there
+ * the origin can be inferred rather than pasted in by hand. Without that there
  * is a chicken-and-egg: you cannot know the domain until the service exists,
  * but the service will not boot without APP_URL.
  */
 const platformDomain = Bun.env.RAILWAY_PUBLIC_DOMAIN;
 
 /**
- * Accepts a bare host as well as a full origin.
- *
- * Railway's RAILWAY_PUBLIC_DOMAIN is a bare domain, and anyone wiring APP_URL
- * to it — by hand or with a variable reference — ends up with a scheme-less
- * value. Refusing that is pedantry: a public deployment is https, and locally
- * it is http.
+ * Accepts a bare host as well as a full origin. Railway's domain variables are
+ * bare, so anyone wiring APP_URL to one ends up with a scheme-less value.
  */
 function toOrigin(value: string): string {
   const trimmed = value.trim().replace(/\/$/, "");
@@ -50,13 +42,50 @@ function toOrigin(value: string): string {
   return `${isProduction ? "https" : "http"}://${trimmed}`;
 }
 
-const appUrl = toOrigin(
+/**
+ * Hosts that resolve only inside a private network. Railway's own
+ * RAILWAY_PRIVATE_DOMAIN is `<service>.railway.internal`, which is easy to pick
+ * by mistake and produces failures far from their cause: Google rejects such a
+ * redirect_uri outright, and invite links point somewhere nobody can open.
+ */
+const NON_PUBLIC_HOST = /^(localhost|127\.\d+\.\d+\.\d+|\[?::1]?)$|\.(internal|local|localhost)$/i;
+
+function hostOf(origin: string): string {
+  try {
+    return new URL(origin).hostname;
+  } catch {
+    return "";
+  }
+}
+
+let appUrl = toOrigin(
   Bun.env.APP_URL ||
     platformDomain ||
     (isProduction
       ? required("APP_URL") // throws with a useful message
       : "http://localhost:3000"),
 );
+
+// Recover from a private host when the platform tells us the public one;
+// otherwise refuse, because everything downstream would fail confusingly.
+if (isProduction && NON_PUBLIC_HOST.test(hostOf(appUrl))) {
+  if (platformDomain && !NON_PUBLIC_HOST.test(platformDomain)) {
+    console.warn(
+      `\n  WARNING: APP_URL is ${appUrl}, which is only reachable inside the\n` +
+        `  private network. Using the public domain ${platformDomain} instead.\n` +
+        "  Set APP_URL to the public URL, or remove it to infer this automatically.\n",
+    );
+    appUrl = toOrigin(platformDomain);
+  } else {
+    throw new Error(
+      `APP_URL is ${appUrl}, which is not reachable from the public internet.\n` +
+        "  Google will reject an OAuth redirect_uri on that host, and invite links\n" +
+        "  would point somewhere nobody can open.\n" +
+        "  On Railway use RAILWAY_PUBLIC_DOMAIN (e.g. myapp.up.railway.app),\n" +
+        "  not RAILWAY_PRIVATE_DOMAIN (*.railway.internal).",
+    );
+  }
+}
 
 if (isProduction && !appUrl.startsWith("https://")) {
   throw new Error(
