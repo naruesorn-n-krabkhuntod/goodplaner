@@ -34,6 +34,9 @@ export function BacklogRegion({ plan, groups, canEdit, canManageSprints }: Backl
   const backlogGroup = groups.find((g) => g.sprint === null);
   const sprintGroups = groups.filter((g) => g.sprint !== null);
   const hasActive = sprintGroups.some((g) => g.sprint?.state === "ACTIVE");
+  const nonCompletedSprints = sprintGroups
+    .filter((g) => g.sprint && g.sprint.state !== "COMPLETED")
+    .map((g) => g.sprint!);
 
   return (
     <div
@@ -75,7 +78,24 @@ export function BacklogRegion({ plan, groups, canEdit, canManageSprints }: Backl
           x-cloak=""
           x-transition=""
         >
-          <span class="text-sm" x-text="`${selected.length} item${selected.length === 1 ? '' : 's'} selected`" />
+          <span class="text-sm text-secondary" x-text="`${selected.length} item${selected.length === 1 ? '' : 's'} selected`" />
+
+          {/* Add selected items to an existing sprint */}
+          {nonCompletedSprints.map((sprint) => (
+            <form
+              hx-post={`/p/${slug}/sprints/${sprint.id}/add-items`}
+              hx-target="#backlog"
+              hx-swap="outerHTML"
+              {...ax({ "x-on:submit": "appendSelectedIds($event)" })}
+            >
+              <button type="submit" class="btn btn-secondary btn-sm">
+                <Icon name="sprint" size={14} />
+                Add to <span safe>{sprint.name}</span>
+              </button>
+            </form>
+          ))}
+
+          {/* Create a brand-new sprint with the selected items */}
           <form
             hx-post={`/p/${slug}/sprints`}
             hx-target="#backlog"
@@ -92,12 +112,11 @@ export function BacklogRegion({ plan, groups, canEdit, canManageSprints }: Backl
                   : "Create a new sprint with selected items"
               }
             >
-              <Icon name="sprint" size={14} />
-              <span x-text="`New sprint from ${selected.length} item${selected.length === 1 ? '' : 's'}`">
-                New sprint from selected
-              </span>
+              <Icon name="plus" size={14} />
+              New sprint
             </button>
           </form>
+
           <button
             type="button"
             class="btn btn-ghost btn-sm"
