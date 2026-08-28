@@ -34,48 +34,12 @@ export function SprintsRegion({ plan, sprints, canManage }: SprintsProps) {
         <EmptyState
           icon="sprint"
           title="No sprints yet"
-          body="A sprint is a fixed window of work. Create one, drag items into it from the backlog, then start it."
-          action={
-            canManage ? (
-              <button
-                type="button"
-                class="btn btn-primary"
-                hx-post={`/p/${slug}/sprints`}
-                hx-target="#sprints"
-                hx-swap="outerHTML"
-              >
-                <Icon name="plus" size={15} />
-                Create the first sprint
-              </button>
-            ) : null
-          }
+          body="Go to the Backlog tab to create a sprint and plan your work."
         />
       ) : (
-        <>
-          {sprints.map((data) => (
-            <SprintCard slug={slug} data={data} canManage={canManage} hasActive={hasActive} />
-          ))}
-          {canManage ? (
-            <div style="display:flex; justify-content:flex-end;">
-              <button
-                type="button"
-                class="btn btn-secondary btn-sm"
-                hx-post={`/p/${slug}/sprints`}
-                hx-target="#sprints"
-                hx-swap="outerHTML"
-                disabled={hasActive}
-                title={
-                  hasActive
-                    ? "Complete the active sprint before creating a new one"
-                    : "Create a new sprint"
-                }
-              >
-                <Icon name="plus" size={14} />
-                New sprint
-              </button>
-            </div>
-          ) : null}
-        </>
+        sprints.map((data) => (
+          <SprintCard slug={slug} data={data} canManage={canManage} hasActive={hasActive} />
+        ))
       )}
     </div>
   );

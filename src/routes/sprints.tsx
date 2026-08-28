@@ -7,7 +7,6 @@ import { db } from "~/lib/db";
 import { publishToPlan } from "~/lib/realtime";
 import { loadBacklogGroups } from "~/lib/views-data";
 import { planScope } from "~/plugins/plan-scope";
-import { Icon } from "~/views/icons";
 import { PlanLayout } from "~/views/plan-layout";
 import { BacklogRegion } from "~/views/pages/backlog";
 import { type SprintCardData, SprintsRegion } from "~/views/pages/sprints";
@@ -79,20 +78,6 @@ export const sprintRoutes = new Elysia({ prefix: "/p/:slug" })
         plans={sidebarPlans}
         plan={plan}
         tab="sprints"
-        actions={
-          access.can("manageSprints") ? (
-            <button
-              type="button"
-              class="btn btn-primary btn-sm"
-              hx-post={`/p/${plan.slug}/sprints`}
-              hx-target="#sprints"
-              hx-swap="outerHTML"
-            >
-              <Icon name="plus" size={14} />
-              New sprint
-            </button>
-          ) : null
-        }
       >
         <div class="page-inner">
           <SprintsRegion plan={plan} sprints={sprints} canManage={access.can("manageSprints")} />
