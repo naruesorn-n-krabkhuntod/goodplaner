@@ -220,15 +220,30 @@ document.addEventListener("htmx:afterRequest", (event) => {
 /**
  * Tracks which backlog items are checked, and wires the "New sprint from N
  * items" form to send their ids as JSON before submission.
+ *
+ * Selection is persisted to sessionStorage so it survives the outerHTML swap
+ * that htmx performs when a teammate's action triggers gp:refresh on #backlog.
  */
+const _BP_KEY = "gp-bp-selected";
+
 function backlogSelect() {
   return {
-    selected: [],
+    selected: (() => {
+      try { return JSON.parse(sessionStorage.getItem(_BP_KEY) || "[]"); } catch { return []; }
+    })(),
+
+    init() {
+      // Keep sessionStorage in sync whenever selection changes.
+      this.$watch("selected", (val) => {
+        try { sessionStorage.setItem(_BP_KEY, JSON.stringify(val)); } catch {}
+      });
+    },
 
     /**
      * Called from the form's x-on:submit before htmx picks it up.
      * Injects hidden inputs for each selected id so the form body includes
      * itemIds[], which the server reads as an array.
+     * Clears selection so the new backlog region that htmx swaps in starts empty.
      */
     appendSelectedIds(event) {
       const form = event.target;
@@ -242,6 +257,8 @@ function backlogSelect() {
         input.className = "injected-item-id";
         form.appendChild(input);
       });
+      // Clear — watcher writes [] to sessionStorage before htmx re-renders.
+      this.selected = [];
     },
   };
 }

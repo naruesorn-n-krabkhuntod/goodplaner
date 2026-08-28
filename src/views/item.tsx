@@ -472,7 +472,6 @@ export function ItemDialog({
                     type="button"
                     class="badge chip"
                     data-color={selectedLabels.has(label.id) ? label.color : "gray"}
-                    style={selectedLabels.has(label.id) ? "" : "opacity:.45"}
                     aria-pressed={selectedLabels.has(label.id) ? "true" : "false"}
                     disabled={!canEdit}
                     hx-post={`${base}/labels/${label.id}`}

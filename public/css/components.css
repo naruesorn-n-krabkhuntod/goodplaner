@@ -436,6 +436,17 @@
   color: var(--c-teal);
 }
 
+/* Selected state: ring drawn from the chip's own text colour so it always
+   contrasts — no opacity trick that would reduce readable contrast. */
+.chip[aria-pressed="true"] {
+  box-shadow: 0 0 0 2px currentColor;
+}
+/* Unselected label buttons in the picker: revert to the neutral gray chip
+   style without any opacity reduction, preserving WCAG AA contrast. */
+.chip[aria-pressed="false"] {
+  opacity: 1;
+}
+
 /* ================================ Avatars ================================ */
 
 .avatar {
