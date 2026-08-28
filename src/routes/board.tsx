@@ -210,9 +210,17 @@ export const boardRoutes = new Elysia({ prefix: "/p/:slug" })
   // ----------------------------------------------------------- create item
   .post(
     "/items",
-    async ({ access, currentUser, body }) => {
+    async ({ access, currentUser, body, set }) => {
       assertCan(access, "editItems");
       const { plan } = access;
+
+      const targetColumn = await db.column.findFirst({
+        where: { id: body.columnId, board: { planId: plan.id } },
+      });
+      if (!targetColumn) {
+        set.status = 400;
+        return "Unknown column";
+      }
 
       const activeSprint = await activeSprintFor(plan.id);
 

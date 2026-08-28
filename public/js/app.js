@@ -51,7 +51,6 @@ function sweepToasts() {
 }
 
 document.addEventListener("DOMContentLoaded", sweepToasts);
-document.body?.addEventListener("htmx:afterSwap", sweepToasts);
 document.addEventListener("htmx:afterSwap", sweepToasts);
 
 /** Lets any script raise a toast without a server round-trip. */

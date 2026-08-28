@@ -39,6 +39,15 @@ function mountBoard(root) {
   const moveUrl = root.dataset.moveUrl;
   if (!moveUrl) return;
 
+  // Wire the dragend handler once per root to avoid accumulation when
+  // mountAll is called multiple times on the same live element.
+  if (!root.dataset.dragendWired) {
+    root.dataset.dragendWired = "1";
+    root.addEventListener("dragend", () => {
+      root.querySelectorAll(".drop-target").forEach((el) => el.classList.remove("drop-target"));
+    });
+  }
+
   root.querySelectorAll(".column-body").forEach((body) => {
     if (sortables.has(body)) return;
 
@@ -86,10 +95,6 @@ function mountBoard(root) {
     sortables.set(body, instance);
   });
 
-  // Clear the drop highlight whenever a drag finishes anywhere on the board.
-  root.addEventListener("dragend", () => {
-    root.querySelectorAll(".drop-target").forEach((el) => el.classList.remove("drop-target"));
-  });
 }
 
 // ------------------------------ Backlog ------------------------------------
@@ -156,8 +161,8 @@ function mountAll(scope = document) {
 }
 
 document.addEventListener("DOMContentLoaded", () => mountAll());
-// Re-mount after htmx replaces a list.
-document.addEventListener("htmx:afterSwap", (event) => mountAll(event.target));
+// htmx:load fires for every new element added to the DOM, which is more
+// reliable than htmx:afterSwap (afterSwap on outerHTML gives the old element).
 document.addEventListener("htmx:load", (event) => mountAll(event.target));
 
 export { itemIds, mountAll };
