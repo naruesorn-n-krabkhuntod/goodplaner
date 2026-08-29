@@ -797,10 +797,11 @@
   color: var(--danger);
 }
 
-/* Inline text editor overlaid on the canvas while typing. */
+/* Inline text editor overlaid on the canvas while typing.
+   position:fixed (not absolute) so .wb overflow:hidden never clips it. */
 .wb-text-input {
-  position: absolute;
-  z-index: var(--z-sticky);
+  position: fixed;
+  z-index: var(--z-modal);
   min-width: 120px;
   padding: var(--space-1) var(--space-2);
   background: var(--bg-raised);

@@ -49,6 +49,7 @@ function boot(root) {
   let dragging = null; // { id, dx, dy } while moving a shape
   let panning = null; // { x, y } while panning
   let spaceHeld = false;
+  let editingText = false; // true while a wb-text-input editor is open
 
   // ---------------------------- Coordinates -------------------------------
 
@@ -388,21 +389,27 @@ function boot(root) {
 
   // ----------------------------- Text editing ------------------------------
 
-  function openTextEditor(shape, screenX, screenY) {
+  function openTextEditor(shape, clientX, clientY) {
+    // One editor at a time.
+    if (editingText) return;
+    editingText = true;
+
     const editor = document.createElement("textarea");
     editor.className = "wb-text-input";
     editor.value = shape.text ?? "";
-    editor.style.left = `${screenX}px`;
-    editor.style.top = `${screenY}px`;
+    // Use viewport coordinates so the textarea isn't clipped by .wb overflow:hidden.
+    editor.style.left = `${clientX}px`;
+    editor.style.top = `${clientY}px`;
     editor.style.width = `${(shape.type === "note" ? NOTE_W : 220) * camera.zoom}px`;
     editor.style.fontSize = `${(shape.size ?? 14) * camera.zoom}px`;
     editor.rows = shape.type === "note" ? 5 : 2;
     editor.setAttribute("aria-label", "Shape text");
-    root.appendChild(editor);
+    document.body.appendChild(editor);
     editor.focus();
     editor.select();
 
     const commit = () => {
+      editingText = false;
       shape.text = editor.value;
       editor.remove();
       // An empty text shape is noise; drop it.
@@ -415,6 +422,8 @@ function boot(root) {
 
     editor.addEventListener("blur", commit, { once: true });
     editor.addEventListener("keydown", (event) => {
+      // Stop keystrokes from reaching the global shortcut handlers.
+      event.stopPropagation();
       if (event.key === "Escape") {
         event.preventDefault();
         editor.blur();
@@ -429,6 +438,10 @@ function boot(root) {
   // ----------------------------- Pointer input -----------------------------
 
   canvas.addEventListener("pointerdown", (event) => {
+    // While a text editor is open, let blur handle the commit; don't start
+    // any new canvas action (which would create a second shape if tool=text).
+    if (editingText) return;
+
     if (event.button === 1 || tool === "pan" || spaceHeld) {
       panning = { x: event.clientX - camera.x, y: event.clientY - camera.y };
       root.dataset.panning = "true";
@@ -472,12 +485,7 @@ function boot(root) {
       scene.push(shape);
       render();
 
-      const rect = canvas.getBoundingClientRect();
-      openTextEditor(
-        shape,
-        event.clientX - rect.left + 6,
-        event.clientY - rect.top + 6,
-      );
+      openTextEditor(shape, event.clientX + 6, event.clientY + 6);
       return;
     }
 
@@ -564,12 +572,11 @@ function boot(root) {
   canvas.addEventListener("pointercancel", endPointer);
 
   canvas.addEventListener("dblclick", (event) => {
-    if (readOnly) return;
+    if (readOnly || editingText) return;
     const hit = hitTest(toWorld(event.clientX, event.clientY));
     if (hit && (hit.type === "note" || hit.type === "text")) {
       snapshot();
-      const rect = canvas.getBoundingClientRect();
-      openTextEditor(hit, event.clientX - rect.left + 6, event.clientY - rect.top + 6);
+      openTextEditor(hit, event.clientX + 6, event.clientY + 6);
     }
   });
 
